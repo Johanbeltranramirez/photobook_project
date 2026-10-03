@@ -63,7 +63,49 @@ class FactorRecomendacion(models.Model):
  
     class Meta:
         abstract = True
- 
+
+class ReaccionEmbebida(models.Model):
+    usuario = models.EmbeddedField(model_container=UsuarioEmbebido)
+    tipoReaccion = models.CharField(max_length=10)
+    fecha = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        abstract = True
+
+class ConteoReacciones(models.Model):
+    like = models.PositiveIntegerField(default=0)
+    amor = models.PositiveIntegerField(default=0)
+    aplauso = models.PositiveIntegerField(default=0)
+    sorpresa = models.PositiveIntegerField(default=0)
+    triste = models.PositiveIntegerField(default=0)
+    risa = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        abstract = True
+
+class RespuestaComentario(models.Model):
+    autor = models.EmbeddedField(model_container=UsuarioEmbebido)
+    contenido = models.CharField(max_length=1000)
+    fechaCreacion = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        abstract = True
+
+class ComentarioEmbebido(models.Model):
+    autor = models.EmbeddedField(model_container=UsuarioEmbebido)
+    contenido = models.CharField(max_length=1000)
+    formato = models.CharField(max_length=10, default="texto")
+    menciones = models.JSONField(default=list, blank=True)
+    archivosAdjuntos = models.JSONField(default=list, blank=True)
+    respuestas = models.ArrayField(model_container=RespuestaComentario, default=list, blank=True)
+    estado = models.CharField(max_length=10, default="activo")
+    conteoReacciones = models.EmbeddedField(model_container=ConteoReacciones)
+    fechaCreacion = models.DateTimeField(default=timezone.now)
+    fechaEdicion = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        abstract = True
+
 class Publicacion(models.Model):
     _id = models.ObjectIdField()
     autor = models.EmbeddedField(model_container=UsuarioEmbebido)
@@ -80,6 +122,8 @@ class Publicacion(models.Model):
     categorias = models.ArrayField(model_container=CategoriaResumen, default=list, blank=True)
     totalReacciones = models.PositiveIntegerField(default=0)
     totalComentarios = models.PositiveIntegerField(default=0)
+    comentarios = models.ArrayField(model_container=ComentarioEmbebido, default=list, blank=True)
+    reacciones = models.ArrayField(model_container=ReaccionEmbebida, default=list, blank=True)
     resoluciones = models.ArrayField(model_container=ResolucionVideo, default=list, blank=True)
     estado = models.CharField(max_length=10, default="publicado")
     fechaPublicacion = models.DateTimeField(default=timezone.now)
