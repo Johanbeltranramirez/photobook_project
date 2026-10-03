@@ -25,8 +25,7 @@ class CategoriaResumen(models.Model):
         abstract = True
  
 class ItemColeccion(models.Model):
-    orden = models.PositiveIntegerField(validators=[MinValueValidator(1)]
-    )
+    orden = models.PositiveIntegerField(validators=[MinValueValidator(1)])
     titulo = models.CharField(max_length=150, blank=True, null=True)
     tipo = models.CharField(max_length=10)
     archivoUrl = models.URLField(max_length=500)
