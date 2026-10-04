@@ -62,7 +62,7 @@ class CategoriaGrupo(models.Model):
 
 class Comentario(ComentarioEmbebido):
     _id = models.ObjectIdField()
-    publicacionId = ReferenciaObjectId()  # Publicación que se comenta
+    publicacionId = ReferenciaObjectId()  
 
     class Meta:
         db_table = "comentarios"
@@ -81,7 +81,7 @@ class Reaccion(ReaccionEmbebida):
     ]
 
     _id = models.ObjectIdField()
-    elementoId = ReferenciaObjectId()  # Elemento sobre el que se reacciona
+    elementoId = ReferenciaObjectId() 
     tipoElemento = models.CharField(max_length=11, choices=TIPO_ELEMENTO_CHOICES)
 
     class Meta:
@@ -153,7 +153,6 @@ class Grupo(models.Model):
             raise ValidationError({"miembros": "Máximo 1000 miembros."})
         if len(self.moderadores or []) > 50:
             raise ValidationError({"moderadores": "Máximo 50 moderadores."})
-        # dependencies: { moderadores: ["miembros"] }
         if self.moderadores and not self.miembros:
             raise ValidationError({"moderadores": "No puede haber moderadores si el grupo no tiene miembros."})
 
