@@ -1,12 +1,40 @@
+from bson import ObjectId
 from django.core.exceptions import ValidationError
-from django.core.validators import (MaxValueValidator, MinLengthValidator, MinValueValidator)
+from django.core.validators import MinLengthValidator, URLValidator
 from django.utils import timezone
 from djongo import models
+
+from publicacion_org_contenido.models import (
+    UsuarioEmbebido,
+    ReaccionEmbebida,
+    ComentarioEmbebido,
+)
+
+
+
+class ReferenciaObjectId(models.Field):
+    description = "ObjectId que referencia a otro documento"
+
+    def get_internal_type(self):
+        return "ObjectIdField"
+
+    def to_python(self, value):
+        if value is None or isinstance(value, ObjectId):
+            return value
+        try:
+            return ObjectId(str(value))
+        except Exception:
+            raise ValidationError("ObjectId inválido.")
+
+    def get_prep_value(self, value):
+        return self.to_python(value)
+
+    def from_db_value(self, value, expression, connection):
+        return value
 
 
 
 def validar_lista_urls_max10(valor):
-    from django.core.validators import URLValidator
     if not isinstance(valor, list):
         raise ValidationError("Debe ser una lista.")
     if len(valor) > 10:
@@ -19,7 +47,6 @@ def validar_lista_urls_max10(valor):
 
 
 def validar_lista_strings(valor):
-    
     if not isinstance(valor, list) or not all(isinstance(v, str) for v in valor):
         raise ValidationError("Debe ser una lista de textos.")
 
@@ -35,7 +62,7 @@ class CategoriaGrupo(models.Model):
 
 class Comentario(ComentarioEmbebido):
     _id = models.ObjectIdField()
-    publicacionId = models.ObjectIdField()  # La publicación que se está comentando
+    publicacionId = ReferenciaObjectId()  # Publicación que se comenta
 
     class Meta:
         db_table = "comentarios"
@@ -45,6 +72,8 @@ class Comentario(ComentarioEmbebido):
         return f"{self.autor.nombreUsuario}: {self.contenido[:40]}"
 
 
+
+
 class Reaccion(ReaccionEmbebida):
     TIPO_ELEMENTO_CHOICES = [
         ("publicacion", "Publicación"),
@@ -52,7 +81,7 @@ class Reaccion(ReaccionEmbebida):
     ]
 
     _id = models.ObjectIdField()
-    elementoId = models.ObjectIdField()  # Elemento sobre el que se reacciona
+    elementoId = ReferenciaObjectId()  # Elemento sobre el que se reacciona
     tipoElemento = models.CharField(max_length=11, choices=TIPO_ELEMENTO_CHOICES)
 
     class Meta:
@@ -75,7 +104,7 @@ class Mensaje(models.Model):
     _id = models.ObjectIdField()
     emisor = models.EmbeddedField(model_container=UsuarioEmbebido)
     receptor = models.EmbeddedField(model_container=UsuarioEmbebido)
-    conversacionId = models.ObjectIdField(blank=True, null=True)
+    conversacionId = ReferenciaObjectId(blank=True, null=True)
     contenido = models.TextField(validators=[MinLengthValidator(1)])
     tipo = models.CharField(max_length=7, choices=TIPO_CHOICES, default="texto")
     leido = models.BooleanField(default=False)
@@ -88,12 +117,14 @@ class Mensaje(models.Model):
         managed = False
 
     def clean(self):
-        # dependencies: { fechaLectura: ["leido"] }
+        
         if self.fechaLectura and not self.leido:
             raise ValidationError({"fechaLectura": "No puede haber fechaLectura si el mensaje no está leído."})
 
     def __str__(self):
         return f"{self.emisor.nombreUsuario} -> {self.receptor.nombreUsuario}"
+
+
 
 
 class Grupo(models.Model):
