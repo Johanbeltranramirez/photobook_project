@@ -1,5 +1,3 @@
-from django.core.validators import MinValueValidator, MaxValueValidator
-from django.utils import timezone
 from djongo import models
 
 class Preferencias(models.Model):
@@ -49,9 +47,7 @@ class Recomendacion(models.Model):
     contenido = models.EmbeddedField(model_container=Contenido,default=dict)
     motivo = models.CharField(max_length=255)
 
-    puntuacion = models.FloatField(
-        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)]
-    )
+    puntuacion = models.FloatField()
 
     class Meta:
         abstract = True
@@ -60,14 +56,9 @@ class Recomendacion(models.Model):
 class Tendencia(models.Model):
 
     contenido = models.EmbeddedField(model_container=Contenido,default=dict)
-    posicion = models.IntegerField(validators=[MinValueValidator(1)])
+    posicion = models.IntegerField()
 
-    puntuacion = models.FloatField(
-        validators=[
-            MinValueValidator(0.0),
-            MaxValueValidator(1.0)
-        ]
-    )
+    puntuacion = models.FloatField()
 
     class Meta:
         abstract = True
@@ -78,10 +69,7 @@ class Destacado(models.Model):
     contenido = models.EmbeddedField(model_container=Contenido,default=dict)
     motivo = models.CharField(max_length=255)
 
-    puntuacion = models.FloatField(
-        validators=[MinValueValidator(0.0),MaxValueValidator(1.0)],
-        blank=True, null=True
-    )
+    puntuacion = models.FloatField()
 
     class Meta:
         abstract = True
@@ -121,7 +109,7 @@ class ExploracionInspiracion(models.Model):
     tendencias = models.ArrayField(model_container=Tendencia,default=list,blank=True)
     destacados = models.ArrayField(model_container=Destacado,default=list,blank=True)
     coleccionesColaborativas = models.ArrayField(model_container=ColeccionColaborativa,default=list,blank=True)
-    fechaActualizacion = models.DateTimeField(default=timezone.now)
+    fechaActualizacion = models.DateTimeField()
 
     class Meta:
         db_table = "exploracion_inspiracion"
