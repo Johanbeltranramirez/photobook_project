@@ -1,160 +1,142 @@
-from bson import ObjectId
-from django.core.exceptions import ValidationError
-from django.core.validators import MinLengthValidator, URLValidator
+from django.db import models
+from django.core.validators import MinLengthValidator
 from django.utils import timezone
-from djongo import models
-
-from publicacion_org_contenido.models import (
-    UsuarioEmbebido,
-    ReaccionEmbebida,
-    ComentarioEmbebido,
-)
 
 
 
-class ReferenciaObjectId(models.Field):
-    description = "ObjectId que referencia a otro documento"
+class ContextoComentario(models.Model):
+    tipo = models.CharField(max_length=10)
+    publicacionUrl = models.URLField(max_length=500, blank=True, null=True)
+    grupoId = models.ObjectIdField(blank=True, null=True)
+    foroId = models.ObjectIdField(blank=True, null=True)
 
-    def get_internal_type(self):
-        return "ObjectIdField"
+    class Meta:
+        abstract = True
 
-    def to_python(self, value):
-        if value is None or isinstance(value, ObjectId):
-            return value
-        try:
-            return ObjectId(str(value))
-        except Exception:
-            raise ValidationError("ObjectId inválido.")
+class MiembroGrupo(models.Model):
+    nombreUsuario = models.CharField(max_length=30, validators=[MinLengthValidator(3)])
+    imagenPerfil = models.URLField(max_length=500, blank=True, null=True)
+    rol = models.CharField(max_length=10, default="miembro")
+    fechaIngreso = models.DateTimeField(default=timezone.now)
 
-    def get_prep_value(self, value):
-        return self.to_python(value)
+    class Meta:
+        abstract = True
 
-    def from_db_value(self, value, expression, connection):
-        return value
+class ForoGrupo(models.Model):
+    _id = models.ObjectIdField()
+    nombre = models.CharField(max_length=80)
+    descripcion = models.CharField(max_length=500, blank=True, null=True)
+    fechaCreacion = models.DateTimeField(default=timezone.now)
 
+    class Meta:
+        abstract = True
 
-
-def validar_lista_urls_max10(valor):
-    if not isinstance(valor, list):
-        raise ValidationError("Debe ser una lista.")
-    if len(valor) > 10:
-        raise ValidationError("Máximo 10 adjuntos.")
-    url_validator = URLValidator()
-    for item in valor:
-        if not isinstance(item, str):
-            raise ValidationError("Cada adjunto debe ser un texto (URL).")
-        url_validator(item)
-
-
-def validar_lista_strings(valor):
-    if not isinstance(valor, list) or not all(isinstance(v, str) for v in valor):
-        raise ValidationError("Debe ser una lista de textos.")
-
-
-
-class CategoriaGrupo(models.Model):
-    nombre = models.CharField(max_length=60)
+class ObjetivoReporte(models.Model):
+    publicacionUrl = models.URLField(max_length=500, blank=True, null=True)
+    comentarioId = models.ObjectIdField(blank=True, null=True)
+    mensajeId = models.ObjectIdField(blank=True, null=True)
+    grupoId = models.ObjectIdField(blank=True, null=True)
+    nombreUsuario = models.CharField(max_length=30, blank=True, null=True)
 
     class Meta:
         abstract = True
 
 
-
-class Comentario(ComentarioEmbebido):
+class Comentario(models.Model):
     _id = models.ObjectIdField()
-    publicacionId = ReferenciaObjectId()  
+    autor = models.EmbeddedField(model_container=UsuarioEmbebido)
+    contexto = models.EmbeddedField(model_container=ContextoComentario)
+    titulo = models.CharField(max_length=150, blank=True, null=True)
+    comentarioPadreId = models.ObjectIdField(blank=True, null=True)
+    contenido = models.TextField(max_length=5000)
+    formato = models.CharField(max_length=10, default="texto")
+    menciones = models.JSONField(default=list, blank=True)
+    archivosAdjuntos = models.JSONField(default=list, blank=True)
+    reacciones = models.ArrayField(model_container=ReaccionEmbebida, default=list, blank=True)
+    totalReacciones = models.PositiveIntegerField(default=0)
+    totalRespuestas = models.PositiveIntegerField(default=0)
+    fijado = models.BooleanField(default=False)
+    cerrado = models.BooleanField(default=False)
+    estado = models.CharField(max_length=10, default="activo")
+    fechaCreacion = models.DateTimeField(default=timezone.now)
+    fechaEdicion = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         db_table = "comentarios"
         managed = False
 
     def __str__(self):
-        return f"{self.autor.nombreUsuario}: {self.contenido[:40]}"
-
-
-
-
-class Reaccion(ReaccionEmbebida):
-    TIPO_ELEMENTO_CHOICES = [
-        ("publicacion", "Publicación"),
-        ("comentario", "Comentario"),
-    ]
-
-    _id = models.ObjectIdField()
-    elementoId = ReferenciaObjectId() 
-    tipoElemento = models.CharField(max_length=11, choices=TIPO_ELEMENTO_CHOICES)
-
-    class Meta:
-        db_table = "reacciones"
-        managed = False
-
-    def __str__(self):
-        return f"{self.tipoReaccion} -> {self.tipoElemento}"
-
-
+        return self.titulo or self.contenido[:50]
 
 class Mensaje(models.Model):
-    TIPO_CHOICES = [
-        ("texto", "Texto"),
-        ("imagen", "Imagen"),
-        ("video", "Video"),
-        ("archivo", "Archivo"),
-    ]
-
     _id = models.ObjectIdField()
     emisor = models.EmbeddedField(model_container=UsuarioEmbebido)
     receptor = models.EmbeddedField(model_container=UsuarioEmbebido)
-    conversacionId = ReferenciaObjectId(blank=True, null=True)
-    contenido = models.TextField(validators=[MinLengthValidator(1)])
-    tipo = models.CharField(max_length=7, choices=TIPO_CHOICES, default="texto")
+    contenido = models.TextField(max_length=5000, blank=True, null=True)
+    tipo = models.CharField(max_length=10, default="texto")
+    adjuntos = models.JSONField(default=list, blank=True)
+    reacciones = models.ArrayField(model_container=ReaccionEmbebida, default=list, blank=True)
     leido = models.BooleanField(default=False)
-    adjuntos = models.JSONField(default=list, blank=True, validators=[validar_lista_urls_max10])
-    fechaEnvio = models.DateTimeField(default=timezone.now)
     fechaLectura = models.DateTimeField(blank=True, null=True)
+    eliminadoPor = models.JSONField(default=list, blank=True)
+    fechaEnvio = models.DateTimeField(default=timezone.now)
 
     class Meta:
         db_table = "mensajes"
         managed = False
 
-    def clean(self):
-        
-        if self.fechaLectura and not self.leido:
-            raise ValidationError({"fechaLectura": "No puede haber fechaLectura si el mensaje no está leído."})
-
     def __str__(self):
         return f"{self.emisor.nombreUsuario} -> {self.receptor.nombreUsuario}"
 
-
-
-
 class Grupo(models.Model):
-    TIPO_CHOICES = [
-        ("publico", "Público"),
-        ("privado", "Privado"),
-    ]
-
     _id = models.ObjectIdField()
-    nombre = models.CharField(max_length=100, validators=[MinLengthValidator(1)])
-    descripcion = models.TextField(blank=True, null=True)
-    tipo = models.CharField(max_length=7, choices=TIPO_CHOICES)
+    nombre = models.CharField(max_length=80, validators=[MinLengthValidator(3)])
+    descripcion = models.TextField(max_length=1000, blank=True, null=True)
+    tipo = models.CharField(max_length=10, default="publico")
+    imagenUrl = models.URLField(max_length=500, blank=True, null=True)
     creador = models.EmbeddedField(model_container=UsuarioEmbebido)
-    categoria = models.EmbeddedField(model_container=CategoriaGrupo, blank=True, null=True)
-    miembros = models.ArrayField(model_container=UsuarioEmbebido, default=list, blank=True)
-    moderadores = models.ArrayField(model_container=UsuarioEmbebido, default=list, blank=True)
-    reglas = models.JSONField(default=list, blank=True, validators=[validar_lista_strings])
+    categoria = models.EmbeddedField(model_container=CategoriaResumen)
+    miembros = models.ArrayField(model_container=MiembroGrupo, default=list, blank=True)
+    foros = models.ArrayField(model_container=ForoGrupo, default=list, blank=True)
+    reglas = models.JSONField(default=list, blank=True)
+    estado = models.CharField(max_length=10, default="activo")
+    totalMiembros = models.PositiveIntegerField(default=0)
     fechaCreacion = models.DateTimeField(default=timezone.now)
 
     class Meta:
         db_table = "grupos"
         managed = False
 
-    def clean(self):
-        if len(self.miembros or []) > 1000:
-            raise ValidationError({"miembros": "Máximo 1000 miembros."})
-        if len(self.moderadores or []) > 50:
-            raise ValidationError({"moderadores": "Máximo 50 moderadores."})
-        if self.moderadores and not self.miembros:
-            raise ValidationError({"moderadores": "No puede haber moderadores si el grupo no tiene miembros."})
-
     def __str__(self):
         return self.nombre
+
+class Moderacion(models.Model):
+    _id = models.ObjectIdField()
+    tipo = models.CharField(max_length=10)
+
+    
+    reportante = models.EmbeddedField(model_container=UsuarioEmbebido, blank=True, null=True)
+    tipoElemento = models.CharField(max_length=12, blank=True, null=True)
+    objetivo = models.EmbeddedField(model_container=ObjetivoReporte, blank=True, null=True)
+    motivo = models.CharField(max_length=25, blank=True, null=True)
+    descripcion = models.TextField(max_length=1000, blank=True, null=True)
+    estado = models.CharField(max_length=12, blank=True, null=True)
+    moderador = models.EmbeddedField(model_container=UsuarioEmbebido, blank=True, null=True)
+    accionTomada = models.CharField(max_length=20, blank=True, null=True)
+    fechaResolucion = models.DateTimeField(blank=True, null=True)
+
+    # Campos de bloqueo
+    bloqueador = models.EmbeddedField(model_container=UsuarioEmbebido, blank=True, null=True)
+    bloqueado = models.EmbeddedField(model_container=UsuarioEmbebido, blank=True, null=True)
+    ambito = models.CharField(max_length=10, blank=True, null=True)
+    grupoId = models.ObjectIdField(blank=True, null=True)
+    fechaExpiracion = models.DateTimeField(blank=True, null=True)
+
+    fechaCreacion = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "moderacion"
+        managed = False
+
+    def __str__(self):
+        return f"{self.tipo} ({self.estado or self.ambito})"
