@@ -47,7 +47,7 @@ class Usuario(models.Model):
     class Meta:
         db_table = "usuarios"
 
-    def _str_(self):
+    def __str__(self):
         return self.nombreUsuario
 
 class Notificacion(models.Model):
@@ -57,8 +57,8 @@ class Notificacion(models.Model):
     usuarioOrigen = models.CharField(max_length=24,blank=True,null=True)
 
     tipo = models.CharField(
-        max_Length=15,
-        choice=[("seguir","Seguir"), ("meGusta","Me gusta"),
+        max_length=15,
+        choices=[("seguir","Seguir"), ("meGusta","Me gusta"),
                 ("comentario","Comentario"), ("mensaje","Mensaje"), ("sistema","Sistema") ])
 
     mensaje = models.CharField(max_length=255)
@@ -69,8 +69,8 @@ class Notificacion(models.Model):
         db_table = "notificaciones"
         managed = False
         indexes = [
-            models.Index(fields=["usuarioNotificado", "notificacionLee", "fechaCreacion",]),
+            models.Index(fields=["usuarioNotificado", "notificacionLeer", "fechaCreacion",]),
         ]
 
-    def _str_(self):
+    def __str__(self):
         return f"{self.tipo} {self.usuarioNotificado}"

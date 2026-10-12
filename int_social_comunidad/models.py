@@ -1,14 +1,13 @@
 from django.db import models
 from django.core.validators import MinLengthValidator
 from django.utils import timezone
-
-
+from djongo import models as djongo_models
 
 class ContextoComentario(models.Model):
     tipo = models.CharField(max_length=10)
     publicacionUrl = models.URLField(max_length=500, blank=True, null=True)
-    grupoId = models.ObjectIdField(blank=True, null=True)
-    foroId = models.ObjectIdField(blank=True, null=True)
+    grupoId = djongo_models.ObjectIdField(blank=True, null=True)
+    foroId = djongo_models.ObjectIdField(blank=True, null=True)
 
     class Meta:
         abstract = True
@@ -23,7 +22,7 @@ class MiembroGrupo(models.Model):
         abstract = True
 
 class ForoGrupo(models.Model):
-    _id = models.ObjectIdField()
+    _id = djongo_models.ObjectIdField()
     nombre = models.CharField(max_length=80)
     descripcion = models.CharField(max_length=500, blank=True, null=True)
     fechaCreacion = models.DateTimeField(default=timezone.now)
@@ -33,9 +32,9 @@ class ForoGrupo(models.Model):
 
 class ObjetivoReporte(models.Model):
     publicacionUrl = models.URLField(max_length=500, blank=True, null=True)
-    comentarioId = models.ObjectIdField(blank=True, null=True)
-    mensajeId = models.ObjectIdField(blank=True, null=True)
-    grupoId = models.ObjectIdField(blank=True, null=True)
+    comentarioId = djongo_models.ObjectIdField(blank=True, null=True)
+    mensajeId = djongo_models.ObjectIdField(blank=True, null=True)
+    grupoId = djongo_models.ObjectIdField(blank=True, null=True)
     nombreUsuario = models.CharField(max_length=30, blank=True, null=True)
 
     class Meta:
@@ -43,16 +42,16 @@ class ObjetivoReporte(models.Model):
 
 
 class Comentario(models.Model):
-    _id = models.ObjectIdField()
-    autor = models.EmbeddedField(model_container=UsuarioEmbebido)
-    contexto = models.EmbeddedField(model_container=ContextoComentario)
+    _id = djongo_models.ObjectIdField()
+    autor = djongo_models.EmbeddedField(model_container=UsuarioEmbebido)
+    contexto = djongo_models.EmbeddedField(model_container=ContextoComentario)
     titulo = models.CharField(max_length=150, blank=True, null=True)
-    comentarioPadreId = models.ObjectIdField(blank=True, null=True)
+    comentarioPadreId = djongo_models.ObjectIdField(blank=True, null=True)
     contenido = models.TextField(max_length=5000)
     formato = models.CharField(max_length=10, default="texto")
     menciones = models.JSONField(default=list, blank=True)
     archivosAdjuntos = models.JSONField(default=list, blank=True)
-    reacciones = models.ArrayField(model_container=ReaccionEmbebida, default=list, blank=True)
+    reacciones = djongo_models.ArrayField(model_container=ReaccionEmbebida, default=list, blank=True)
     totalReacciones = models.PositiveIntegerField(default=0)
     totalRespuestas = models.PositiveIntegerField(default=0)
     fijado = models.BooleanField(default=False)
@@ -69,13 +68,13 @@ class Comentario(models.Model):
         return self.titulo or self.contenido[:50]
 
 class Mensaje(models.Model):
-    _id = models.ObjectIdField()
-    emisor = models.EmbeddedField(model_container=UsuarioEmbebido)
-    receptor = models.EmbeddedField(model_container=UsuarioEmbebido)
+    _id = djongo_models.ObjectIdField()
+    emisor = djongo_models.EmbeddedField(model_container=UsuarioEmbebido)
+    receptor = djongo_models.EmbeddedField(model_container=UsuarioEmbebido)
     contenido = models.TextField(max_length=5000, blank=True, null=True)
     tipo = models.CharField(max_length=10, default="texto")
     adjuntos = models.JSONField(default=list, blank=True)
-    reacciones = models.ArrayField(model_container=ReaccionEmbebida, default=list, blank=True)
+    reacciones = djongo_models.ArrayField(model_container=ReaccionEmbebida, default=list, blank=True)
     leido = models.BooleanField(default=False)
     fechaLectura = models.DateTimeField(blank=True, null=True)
     eliminadoPor = models.JSONField(default=list, blank=True)
