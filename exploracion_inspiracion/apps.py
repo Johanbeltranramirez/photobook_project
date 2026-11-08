@@ -1,5 +1,6 @@
 from django.apps import AppConfig
 
 
-class ExploracionInspiracionConfig(AppConfig):
-    name = 'exploracion_inspiracion'
+class ExploracionConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'exploracion'
