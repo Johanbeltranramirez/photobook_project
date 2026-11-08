@@ -1,165 +1,154 @@
+from django.contrib import messages
+from django.contrib.auth.hashers import check_password, make_password
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.db.models import Q
-from django.core.exceptions import ValidationError
-from .models import Usuario
-from .arrays import PATRON_URL, PATRON_CORREO, ROLES_USUARIO
+from django.views.decorators.http import require_http_methods, require_POST
+from publicacion_org_contenido.models import Publicacion
+from photobook.consultas import documentos, existe_bloqueo
+from .acceso import sesion_requerida, comprobar_propietario, puede_administrar
+from .forms import FormularioRegistro, FormularioIngreso, FormularioPerfil
+from .models import Usuario, Notificacion
 
 
+def inicio(solicitud):
+    publicaciones = Publicacion.objects.filter(estado='publicado').order_by('-fechaPublicacion')
+    if solicitud.usuario:
+        publicaciones = [dato for dato in publicaciones if not existe_bloqueo(solicitud.usuario.nombreUsuario, dato.autor['nombreUsuario'], 'contenido')]
+    return render(solicitud, 'inicio.html', {'publicaciones': publicaciones[:12]})
 
-def usuarios_listar(request):
-    texto = request.GET.get('q')
-    rol = request.GET.get('rol')
-    orden = request.GET.get('orden')
-    sentido = '-creacionCuenta' if orden == 'recientes' else 'nombreUsuario'
-    condicion = Q()
+
+@require_http_methods(['GET', 'POST'])
+def registrar_usuario(solicitud):
+    formulario = FormularioRegistro(solicitud.POST or None)
+    if solicitud.method == 'POST' and formulario.is_valid():
+        datos = formulario.cleaned_data
+        usuario = Usuario.objects.create(
+            nombreUsuario=datos['nombreUsuario'], correo=datos['correo'],
+            contrasena=make_password(datos['contrasena']), rol='artista',
+            privacidad={'perfilPublico': True, 'correoVisible': False},
+        )
+        solicitud.session.flush()
+        solicitud.session['usuario'] = str(usuario.pk)
+        return redirect('perfil_detalle', nombre=usuario.nombreUsuario)
+    return render(solicitud, 'comunes/formulario.html', {'formulario': formulario, 'titulo': 'Crear cuenta'})
+
+
+@require_http_methods(['GET', 'POST'])
+def iniciar_sesion(solicitud):
+    formulario = FormularioIngreso(solicitud.POST or None)
+    if solicitud.method == 'POST' and formulario.is_valid():
+        datos = formulario.cleaned_data
+        usuario = Usuario.objects.filter(nombreUsuario=datos['nombreUsuario'].lower(), activo__in=[True]).first()
+        if usuario and check_password(datos['contrasena'], usuario.contrasena):
+            solicitud.session.flush()
+            solicitud.session['usuario'] = str(usuario.pk)
+            return redirect('inicio')
+        formulario.add_error(None, 'El usuario o la contraseña no son correctos.')
+    return render(solicitud, 'comunes/formulario.html', {'formulario': formulario, 'titulo': 'Iniciar sesión'})
+
+
+@require_POST
+def cerrar_sesion(solicitud):
+    solicitud.session.flush()
+    return redirect('inicio')
+
+
+@sesion_requerida
+def usuarios_listar(solicitud):
+    usuarios = Usuario.objects.filter(activo__in=[True]).order_by('nombreUsuario')
+    texto = solicitud.GET.get('buscar', '').strip()
     if texto:
-        condicion &= Q(nombreUsuario__contains=texto) | Q(biografia__contains=texto)
-    if rol in ROLES_USUARIO:
-        condicion &= Q(rol=rol)
-    usuarios = Usuario.objects.filter(condicion).order_by(sentido)
-    data = {'usuarios': usuarios[:50], 'total': usuarios.count()}
-    return render(request, 'usuarios_lista.html', {'data': data})
+        usuarios = usuarios.filter(nombreUsuario__icontains=texto)
+    return render(solicitud, 'usuarios/lista.html', {'usuarios': usuarios})
 
 
-def usuario_detalle(request, pk):
-    usuario = get_object_or_404(Usuario, pk=pk)
-    return render(request, 'usuario_detalle.html', {'data': {'usuario': usuario}})
+@sesion_requerida
+def perfil_detalle(solicitud, nombre):
+    usuario = get_object_or_404(Usuario, nombreUsuario=nombre, activo__in=[True])
+    propio = solicitud.usuario.pk == usuario.pk
+    puede_ver = propio or usuario.privacidad['perfilPublico'] or solicitud.usuario.rol == 'administrador'
+    if existe_bloqueo(solicitud.usuario.nombreUsuario, nombre, 'contenido'):
+        raise PermissionDenied('Este perfil no está disponible.')
+    publicaciones = documentos(Publicacion, {'autor.nombreUsuario': nombre, 'estado': 'publicado'}) if puede_ver else []
+    return render(solicitud, 'usuarios/detalle.html', {'perfil': usuario, 'propio': propio, 'puede_ver': puede_ver, 'publicaciones': publicaciones})
 
 
-def usuario_crear(request):
-    contexto = {'accion': 'crear'}
-    if request.method == 'GET':
-        return render(request, 'usuario_form.html', {'data': contexto})
-    errores = []
-    datos = {
-        'nombreUsuario': request.POST.get('nombreUsuario', '').strip(),
-        'correo': request.POST.get('correo', '').strip().lower(),
-        'contrasena': request.POST.get('contrasena', ''),
-        'imagenPerfil': request.POST.get('imagenPerfil') or None,
-        'biografia': request.POST.get('biografia') or None,
-        'rol': request.POST.get('rol') or 'artista',
-    }
-   
-    if not 3 <= len(datos['nombreUsuario']) <= 30:
-        errores.append('El nombre de usuario debe tener entre 3 y 30 caracteres.')
-    if Usuario.objects.filter(nombreUsuario=datos['nombreUsuario']).exists():
-        errores.append('Ya existe un usuario con ese nombre.')
-    if not datos['correo'] or not PATRON_CORREO.match(datos['correo']):
-        errores.append('El correo no es válido.')
-    if Usuario.objects.filter(correo=datos['correo']).exists():
-        errores.append('Ya existe un usuario con ese correo.')
-    if not 6 <= len(datos['contrasena']) <= 255:
-        errores.append('La contraseña debe tener entre 6 y 255 caracteres.')
-    if datos['imagenPerfil'] and not PATRON_URL.match(datos['imagenPerfil']):
-        errores.append('La imagen de perfil debe ser un link válido.')
-    if datos['biografia'] and len(datos['biografia']) > 255:
-        errores.append('La biografía admite máximo 255 caracteres.')
-    if datos['rol'] not in ROLES_USUARIO:
-        errores.append('El rol debe ser artista o administrador.')
-    if not errores:
-        
-        usuario = Usuario(**datos)
-        try:
-            usuario.full_clean(validate_unique=False)
-        except ValidationError as excepcion:
-            errores = excepcion.messages
-    if errores:
-        contexto['errores'] = errores
-        return render(request, 'usuario_form.html', {'data': contexto})
+@sesion_requerida
+@require_http_methods(['GET', 'POST'])
+def perfil_actualizar(solicitud, nombre):
+    usuario = get_object_or_404(Usuario, nombreUsuario=nombre, activo__in=[True])
+    if not puede_administrar(solicitud.usuario, 'permiso_usuarios') or usuario.rol == 'administrador':
+        comprobar_propietario(solicitud, nombre)
+    datos = {'imagenPerfil': usuario.imagenPerfil, 'biografia': usuario.biografia, **usuario.privacidad}
+    formulario = FormularioPerfil(solicitud.POST or None, initial=datos)
+    if solicitud.method == 'POST' and formulario.is_valid():
+        datos = formulario.cleaned_data
+        usuario.imagenPerfil = datos['imagenPerfil'] or None
+        usuario.biografia = datos['biografia'] or None
+        usuario.privacidad = {'perfilPublico': datos['perfilPublico'], 'correoVisible': datos['correoVisible']}
+        usuario.save()
+        return redirect('perfil_detalle', nombre=nombre)
+    return render(solicitud, 'comunes/formulario.html', {'formulario': formulario, 'titulo': 'Editar perfil'})
+
+
+@sesion_requerida
+@require_http_methods(['GET', 'POST'])
+def perfil_eliminar(solicitud, nombre):
+    usuario = get_object_or_404(Usuario, nombreUsuario=nombre, activo__in=[True])
+    if not puede_administrar(solicitud.usuario, 'permiso_usuarios') or usuario.rol == 'administrador':
+        comprobar_propietario(solicitud, nombre)
+    if usuario.rol == 'administrador' and Usuario.objects.filter(rol='administrador', activo__in=[True]).count() <= 1:
+        raise PermissionDenied('No se puede desactivar al último administrador.')
+    if solicitud.method == 'POST':
+        usuario.activo = False
+        usuario.save()
+        if solicitud.usuario.pk == usuario.pk:
+            solicitud.session.flush()
+        return redirect('inicio')
+    return render(solicitud, 'comunes/eliminar.html', {'titulo': 'Desactivar cuenta', 'objeto': nombre, 'explicacion': 'La cuenta dejará de iniciar sesión. Se conserva el contenido y su autoría.'})
+
+
+@sesion_requerida
+@require_POST
+def seguir_usuario(solicitud, nombre):
+    otro = get_object_or_404(Usuario, nombreUsuario=nombre, activo__in=[True])
+    usuario = solicitud.usuario
+    if otro.pk == usuario.pk or existe_bloqueo(usuario.nombreUsuario, nombre, 'contenido'):
+        raise PermissionDenied('No puedes seguir este perfil.')
+    if any(dato['usuario'] == nombre for dato in usuario.siguiendo):
+        usuario.siguiendo = [dato for dato in usuario.siguiendo if dato['usuario'] != nombre]
+        otro.seguidores = [dato for dato in otro.seguidores if dato['usuario'] != usuario.nombreUsuario]
+    else:
+        fecha = timezone.now()
+        usuario.siguiendo.append({'usuario': nombre, 'inicioSeg': fecha})
+        otro.seguidores.append({'usuario': usuario.nombreUsuario, 'inicioSeg': fecha})
+        Notificacion.objects.create(usuarioNotificado=nombre, usuarioOrigen=usuario.nombreUsuario, tipo='seguir', mensaje=usuario.nombreUsuario + ' comenzó a seguirte.')
     usuario.save()
-    return redirect('usuario_detalle', pk=usuario.pk)
+    otro.save()
+    return redirect('perfil_detalle', nombre=nombre)
 
 
-def usuario_actualizar(request, pk):
-    usuario = get_object_or_404(Usuario, pk=pk)
-    contexto = {'accion': 'actualizar', 'usuario': usuario}
-    if request.method == 'GET':
-        return render(request, 'usuario_form.html', {'data': contexto})
-    errores = []
-    datos = {
-        'nombreUsuario': request.POST.get('nombreUsuario', '').strip(),
-        'correo': request.POST.get('correo', '').strip().lower(),
-        'imagenPerfil': request.POST.get('imagenPerfil') or None,
-        'biografia': request.POST.get('biografia') or None,
-        'rol': request.POST.get('rol') or 'artista',
-    }
-    contrasena = request.POST.get('contrasena', '')
-    
-    if not 3 <= len(datos['nombreUsuario']) <= 30:
-        errores.append('El nombre de usuario debe tener entre 3 y 30 caracteres.')
-    if Usuario.objects.filter(nombreUsuario=datos['nombreUsuario']).exclude(pk=usuario.pk).exists():
-        errores.append('Ya existe otro usuario con ese nombre.')
-    if not datos['correo'] or not PATRON_CORREO.match(datos['correo']):
-        errores.append('El correo no es válido.')
-    if Usuario.objects.filter(correo=datos['correo']).exclude(pk=usuario.pk).exists():
-        errores.append('Ya existe otro usuario con ese correo.')
-    if contrasena and not 6 <= len(contrasena) <= 255:
-        errores.append('La contraseña debe tener entre 6 y 255 caracteres.')
-    if datos['imagenPerfil'] and not PATRON_URL.match(datos['imagenPerfil']):
-        errores.append('La imagen de perfil debe ser un link válido.')
-    if datos['biografia'] and len(datos['biografia']) > 255:
-        errores.append('La biografía admite máximo 255 caracteres.')
-    if datos['rol'] not in ROLES_USUARIO:
-        errores.append('El rol debe ser artista o administrador.')
-    if not errores:
-        for campo, valor in datos.items():
-            setattr(usuario, campo, valor)
-        if contrasena:
-            usuario.contrasena = contrasena  
-        try:
-            usuario.full_clean(validate_unique=False)
-        except ValidationError as excepcion:
-            errores = excepcion.messages
-    if errores:
-        contexto['errores'] = errores
-        return render(request, 'usuario_form.html', {'data': contexto})
-    usuario.save()
-    return redirect('usuario_detalle', pk=usuario.pk)
+@sesion_requerida
+def notificaciones_listar(solicitud):
+    notificaciones = Notificacion.objects.filter(usuarioNotificado=solicitud.usuario.nombreUsuario).order_by('-fechaCreacion')
+    return render(solicitud, 'usuarios/notificaciones.html', {'notificaciones': notificaciones})
 
 
-def usuario_eliminar(_request, pk):
-    usuario = get_object_or_404(Usuario, pk=pk)
-    usuario.delete()
-    return redirect('usuarios_listar')
+@sesion_requerida
+@require_POST
+def notificacion_leer(solicitud, pk):
+    notificacion = get_object_or_404(Notificacion, pk=pk, usuarioNotificado=solicitud.usuario.nombreUsuario)
+    notificacion.notificacionLeer = True
+    notificacion.save()
+    return redirect('notificaciones_listar')
 
 
-def usuario_seguir(request, pk):
-    usuario = get_object_or_404(Usuario, pk=pk)
-    errores = []
-    seguidor_nombre = request.POST.get('seguidor', '')
-    if not 3 <= len(seguidor_nombre) <= 30:
-        errores.append('El seguidor debe tener un nombre de 3 a 30 caracteres.')
-    if seguidor_nombre == usuario.nombreUsuario:
-        errores.append('No puedes seguirte a ti mismo.')
-    if any(s.usuario == seguidor_nombre for s in usuario.seguidores.all()):
-        errores.append('Ya sigues a este usuario.')
-    if errores:
-        return render(request, 'usuario_detalle.html', {'data': {'usuario': usuario, 'errores': errores}}, status=400)
-    
-    usuario.seguidores.create(usuario=seguidor_nombre, inicioSeg=timezone.now())
-    
-    seguidor = Usuario.objects.filter(nombreUsuario=seguidor_nombre).first()
-    if seguidor:
-        seguidor.siguiendo.create(usuario=usuario.nombreUsuario, inicioSeg=timezone.now())
-        seguidor.save()
-    usuario.save()
-    return redirect('usuario_detalle', pk=usuario.pk)
-
-
-def usuario_dejar_seguir(request, pk):
-    usuario = get_object_or_404(Usuario, pk=pk)
-    seguidor_nombre = request.POST.get('seguidor', '')
-    seguidor_rel = usuario.seguidores.filter(usuario=seguidor_nombre).first()
-    if seguidor_rel is None:
-        errores = ['No sigues a este usuario.']
-        return render(request, 'usuario_detalle.html', {'data': {'usuario': usuario, 'errores': errores}}, status=400)
-    seguidor_rel.delete()
-    seguidor = Usuario.objects.filter(nombreUsuario=seguidor_nombre).first()
-    if seguidor:
-        siguiendo_rel = seguidor.siguiendo.filter(usuario=usuario.nombreUsuario).first()
-        if siguiendo_rel:
-            siguiendo_rel.delete()
-        seguidor.save()
-    usuario.save()
-    return redirect('usuario_detalle', pk=usuario.pk)
+@sesion_requerida
+@require_http_methods(['GET', 'POST'])
+def notificacion_eliminar(solicitud, pk):
+    notificacion = get_object_or_404(Notificacion, pk=pk, usuarioNotificado=solicitud.usuario.nombreUsuario)
+    if solicitud.method == 'POST':
+        notificacion.delete()
+        return redirect('notificaciones_listar')
+    return render(solicitud, 'comunes/eliminar.html', {'titulo': 'Eliminar notificación', 'objeto': notificacion.mensaje})

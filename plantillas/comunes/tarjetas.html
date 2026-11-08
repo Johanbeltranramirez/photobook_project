@@ -1,0 +1,9 @@
+<div class="galeria">
+{% for publicacion in publicaciones %}
+<article class="tarjeta">
+    {% if publicacion.tipo == 'imagen' %}<img src="{{ publicacion.archivoUrl }}" alt="{{ publicacion.titulo|default:'Publicación' }}" loading="lazy">{% else %}<video controls preload="metadata" src="{{ publicacion.archivoUrl }}"></video>{% endif %}
+    <div class="tarjeta_texto"><h2><a href="{% url 'publicacion_detalle' publicacion.pk %}">{{ publicacion.titulo|default:'Sin título' }}</a></h2>
+    <p>{{ publicacion.autor.nombreUsuario }}</p><small>{{ publicacion.totalReacciones }} reacciones · {{ publicacion.totalComentarios }} comentarios</small></div>
+</article>
+{% empty %}<p>Todavía no hay publicaciones para mostrar.</p>{% endfor %}
+</div>
