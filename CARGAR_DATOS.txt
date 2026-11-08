@@ -1,0 +1,62 @@
+DATOS DE EJEMPLO PARA PHOTOBOOK
+
+Abre la terminal en la carpeta que contiene manage.py, activa el entorno
+virtual y comprueba que MongoDB esté en ejecución.
+
+Si todavía no has preparado la base, ejecuta:
+python manage.py preparar_base
+
+Si todavía no tienes un administrador, ejecuta:
+python manage.py crear_administrador
+
+Para insertar los datos:
+python manage.py cargar_ejemplos
+
+El comando solicita una contraseña de entre 8 y 128 caracteres para las
+cuentas nuevas. La terminal no muestra los caracteres al escribirla.
+Las cuentas que ya existían conservan su contraseña.
+
+CUENTAS
+ana_demo
+luis_demo
+maria_demo
+carlos_demo
+
+Para abrir la aplicación:
+python manage.py runserver
+
+Entra a http://127.0.0.1:8000/ e inicia sesión con una de esas cuentas y la
+contraseña que escribiste. Utiliza tu administrador para revisar reportes,
+roles, actuaciones y control del sistema.
+
+CONTENIDO
+8 publicaciones con fotografías, comentarios y reacciones.
+5 categorías: naturaleza, viajes, ciudad, gastronomía y flores.
+4 colecciones, una de ellas privada y dos colaborativas.
+3 grupos con miembros y foros para participar.
+8 mensajes y 8 notificaciones.
+Preferencias y recomendaciones para cada cuenta de ejemplo.
+2 reportes pendientes, un bloqueo vencido y registros administrativos.
+
+Las fotografías ya están en estaticos/ejemplos. No se descargan al ejecutar
+el comando ni dependen de una página externa. La base guarda sus enlaces
+locales junto con el título, el autor de ejemplo y los demás datos. Los
+créditos de los fotógrafos reales aparecen en la descripción y en
+base_datos/FUENTES_IMAGENES.txt.
+
+Puedes repetir el comando: comprueba qué ejemplos existen antes de insertar.
+No borra datos ni restablece contraseñas o preferencias. Las cantidades
+anteriores corresponden a los ejemplos incluidos; se suman a lo que ya tengas.
+Si usaste la carga anterior, también se conserva su ilustración de paisaje.
+
+OTRO PUERTO
+Si vas a usar el puerto 8001, indícalo desde la primera carga:
+python manage.py cargar_ejemplos --direccion http://127.0.0.1:8001
+python manage.py runserver 8001
+
+Cambiar --direccion después no reescribe los enlaces de los datos existentes.
+Si una imagen no aparece, comprueba que Django esté iniciado y que el enlace
+guardado use el mismo puerto. Conserva completa la carpeta estaticos/ejemplos.
+
+ARCHIVO DEL COMANDO
+g_usuarios_perfiles/management/commands/cargar_ejemplos.py

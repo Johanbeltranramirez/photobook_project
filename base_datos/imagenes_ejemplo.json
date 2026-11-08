@@ -1,0 +1,162 @@
+[
+  {
+    "archivo": "lago_montanas.jpg",
+    "titulo": "Un lago entre montañas",
+    "categoria": "naturaleza",
+    "etiquetas": [
+      "montanas",
+      "lago",
+      "paisaje"
+    ],
+    "usuario": "ana_demo",
+    "ancho": 1280,
+    "alto": 850,
+    "bytes": 323180,
+    "fotografo": "Aleksandra Boguslawska aleksandraboguslawska",
+    "licencia": "CC0 1.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Mountain_lake_(Unsplash).jpg",
+    "descarga": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5b/Mountain_lake_%28Unsplash%29.jpg/1280px-Mountain_lake_%28Unsplash%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sha256": "97dc4578efcee98f62876a6f5cb8c728d98ee5cd5d931ce9f858b08b45854545",
+    "identificador": "6af0067a202edecb332686f7"
+  },
+  {
+    "archivo": "valle_azul.jpg",
+    "titulo": "Un valle para desconectarse",
+    "categoria": "viajes",
+    "etiquetas": [
+      "valle",
+      "lago",
+      "viaje"
+    ],
+    "usuario": "luis_demo",
+    "ancho": 1280,
+    "alto": 835,
+    "bytes": 148474,
+    "fotografo": "Robert Magnusson robertmagnusson",
+    "licencia": "CC0 1.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Large_mountain_lake_(Unsplash).jpg",
+    "descarga": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bb/Large_mountain_lake_%28Unsplash%29.jpg/1280px-Large_mountain_lake_%28Unsplash%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sha256": "f4cf248adeaddbacaf5a15ece18e141076f5c740aba1a479e896e103a4f4ec18",
+    "identificador": "6af0067a202edecb332686f8"
+  },
+  {
+    "archivo": "lago_bosque.jpg",
+    "titulo": "Bosques junto al agua",
+    "categoria": "naturaleza",
+    "etiquetas": [
+      "bosque",
+      "lago",
+      "naturaleza"
+    ],
+    "usuario": "maria_demo",
+    "ancho": 1280,
+    "alto": 878,
+    "bytes": 340126,
+    "fotografo": "Chris Leipelt cleipelt",
+    "licencia": "CC0 1.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Clear_lake_in_snowy_mountains_(Unsplash).jpg",
+    "descarga": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d7/Clear_lake_in_snowy_mountains_%28Unsplash%29.jpg/1280px-Clear_lake_in_snowy_mountains_%28Unsplash%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sha256": "ecf899ba0f5053f39a7803cb93becfd8f720c649e6fc5ce455b4471642f35f63",
+    "identificador": "6af0067a202edecb332686f9"
+  },
+  {
+    "archivo": "valle_verde.jpg",
+    "titulo": "Verde hasta el horizonte",
+    "categoria": "naturaleza",
+    "etiquetas": [
+      "valle",
+      "montanas",
+      "naturaleza"
+    ],
+    "usuario": "carlos_demo",
+    "ancho": 1280,
+    "alto": 852,
+    "bytes": 369352,
+    "fotografo": "Veri Ivanova veri_ivanova",
+    "licencia": "CC0 1.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Lake_in_a_mountain_valley_(Unsplash).jpg",
+    "descarga": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d4/Lake_in_a_mountain_valley_%28Unsplash%29.jpg/1280px-Lake_in_a_mountain_valley_%28Unsplash%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sha256": "769f4b7b9a3b828240f95ae351a50163677aff8f3f25851826d494fa24cd6635",
+    "identificador": "6af0067a202edecb332686fa"
+  },
+  {
+    "archivo": "flores_costa.jpg",
+    "titulo": "Flores frente al mar",
+    "categoria": "flores",
+    "etiquetas": [
+      "flores",
+      "mar",
+      "naturaleza"
+    ],
+    "usuario": "maria_demo",
+    "ancho": 1280,
+    "alto": 853,
+    "bytes": 157126,
+    "fotografo": "Ramón Salinero donramxn",
+    "licencia": "CC0 1.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Flowers_on_the_coast_(Unsplash).jpg",
+    "descarga": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/40/Flowers_on_the_coast_%28Unsplash%29.jpg/1280px-Flowers_on_the_coast_%28Unsplash%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sha256": "70cf5ec29ef2d29399f30759080e6b8b70eac66d5784f7932294154bace4c0b6",
+    "identificador": "6af0067a202edecb332686fb"
+  },
+  {
+    "archivo": "barcelona.jpg",
+    "titulo": "La ciudad junto al mar",
+    "categoria": "ciudad",
+    "etiquetas": [
+      "ciudad",
+      "arquitectura",
+      "viaje"
+    ],
+    "usuario": "carlos_demo",
+    "ancho": 1280,
+    "alto": 854,
+    "bytes": 291396,
+    "fotografo": "Enes royalfound",
+    "licencia": "CC0 1.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Cityscape_of_Barcelona_city_beach_(Unsplash).jpg",
+    "descarga": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1c/Cityscape_of_Barcelona_city_beach_%28Unsplash%29.jpg/1280px-Cityscape_of_Barcelona_city_beach_%28Unsplash%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sha256": "8681519f45980a7f5a62eedf267c067891c39b849e77404a71c35cafeeccdb29",
+    "identificador": "6af0067a202edecb332686fc"
+  },
+  {
+    "archivo": "montanas_nevadas.jpg",
+    "titulo": "Montañas reflejadas en el lago",
+    "categoria": "viajes",
+    "etiquetas": [
+      "montanas",
+      "lago",
+      "viaje"
+    ],
+    "usuario": "ana_demo",
+    "ancho": 1280,
+    "alto": 960,
+    "bytes": 273439,
+    "fotografo": "Georgia Dixon georgiadixon",
+    "licencia": "CC0 1.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Mountains_by_the_lake_(Unsplash).jpg",
+    "descarga": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bc/Mountains_by_the_lake_%28Unsplash%29.jpg/1280px-Mountains_by_the_lake_%28Unsplash%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sha256": "525d9da65067bae095dcad368a1afff8b88cb323d73fba157f6a348aa18172e8",
+    "identificador": "6af0067a202edecb332686fd"
+  },
+  {
+    "archivo": "cafe.jpg",
+    "titulo": "Una pausa para el café",
+    "categoria": "gastronomia",
+    "etiquetas": [
+      "cafe",
+      "detalle",
+      "cotidiano"
+    ],
+    "usuario": "luis_demo",
+    "ancho": 1280,
+    "alto": 1633,
+    "bytes": 49933,
+    "fotografo": "Ronaldo Arthur Vidal ronaldoav",
+    "licencia": "CC0 1.0",
+    "fuente": "https://commons.wikimedia.org/wiki/File:Flat_Lay_Black_Coffee_(Unsplash).jpg",
+    "descarga": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ea/Flat_Lay_Black_Coffee_%28Unsplash%29.jpg/1280px-Flat_Lay_Black_Coffee_%28Unsplash%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+    "sha256": "e2a5bf4d3b25a38ab12137a88ae0068eb4530dfa20651473165223601e6704a1",
+    "identificador": "6af0067a202edecb332686fe"
+  }
+]

@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% block contenido %}<h1>Grupos</h1><a class="boton" href="{% url 'grupo_crear' %}">Crear grupo</a>
+<form method="get"><label>Buscar grupo<input name="q" value="{{ request.GET.q }}"></label><button>Buscar</button></form>
+{% for grupo in datos.grupos %}<article class="fila"><h2><a href="{% url 'grupo_detalle' grupo.pk %}">{{ grupo.nombre }}</a></h2><p>{{ grupo.descripcion }}</p><small>{{ grupo.tipo|capfirst }} · {{ grupo.totalMiembros }} miembros</small></article>{% empty %}<p>No hay grupos para mostrar.</p>{% endfor %}
+{% endblock %}

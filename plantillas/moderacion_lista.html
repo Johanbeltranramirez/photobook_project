@@ -1,0 +1,2 @@
+{% extends 'base.html' %}{% block contenido %}<h1>Mis bloqueos activos</h1><a class="boton" href="{% url 'bloqueo_crear' %}">Bloquear usuario</a>
+{% for bloqueo in datos.moderaciones %}<article class="fila"><a href="{% url 'moderacion_detalle' bloqueo.pk %}">{{ bloqueo.bloqueado.nombreUsuario }}</a><p>{{ bloqueo.ambito|capfirst }}</p></article>{% empty %}<p>No tienes bloqueos activos.</p>{% endfor %}{% endblock %}

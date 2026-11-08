@@ -1,0 +1,72 @@
+PHOTOBOOK: PUNTOS PARA LA SUSTENTACIÓN
+
+1. RECORRIDO DE UNA PETICIÓN
+La ruta llega a una función de views.py. En una consulta, la vista obtiene
+los documentos y los envía a la plantilla mediante un diccionario. En un
+formulario, GET presenta los campos y POST valida los datos antes de guardar.
+Al terminar se redirige a otra ruta para evitar repetir la operación al
+recargar la página.
+
+2. USUARIOS COMPARTIDOS
+El registro crea un documento en usuarios. Al ingresar se comprueba la
+contraseña y se guarda el identificador del usuario en la sesión. Las vistas
+recuperan ese usuario; no aceptan que el visitante escriba quién es el autor
+o moderador de una operación. Los otros participantes se eligen de usuarios.
+
+3. DOCUMENTOS EMBEBIDOS
+Una publicación incluye un resumen del autor, categorías, comentarios y
+reacciones. Un grupo incluye miembros y foros. Estos objetos forman parte
+del documento; no son llaves foráneas. Los modelos abstractos describen los
+objetos embebidos y no crean colecciones independientes.
+
+4. MODELOS Y JSON SCHEMA
+El modelo describe los campos que utiliza Python. El JSON Schema protege
+la colección en MongoDB: define tipos, campos obligatorios, valores admitidos
+y propiedades adicionales. Ambos deben coincidir. Los índices únicos evitan,
+por ejemplo, repetir el nombre de usuario, el correo o el enlace de una
+publicación. Los formularios validan antes de intentar guardar.
+
+5. COLECCIONES INTEGRADAS
+Los módulos reutilizan usuarios, categorías y publicaciones. Exploración
+consulta publicaciones y guarda sus recomendaciones en recomendaciones.
+Comunidad crea reportes en reporteContenido y Administración atiende esos
+mismos documentos. No existe otra copia del reporte en moderacion.
+
+6. RECOMENDACIONES
+Se compara cada publicación visible con las preferencias del usuario.
+Una coincidencia de categoría aporta un tercio, una de etiqueta otro tercio
+y una de artista otro tercio. No se utilizan modelos de inteligencia
+artificial ni servicios externos. Las tendencias se ordenan por reacciones
+y comentarios; los destacados dan prioridad al número de comentarios.
+
+7. PLANTILLAS COMPARTIDAS
+Las páginas extienden base.html e incluyen los mismos componentes. Cambiar
+el menú, el pie o el archivo de estilos afecta a todos los módulos. Los
+formularios muestran sus errores junto a los campos.
+
+8. PERMISOS
+Se comprueba que exista una sesión antes de entrar a las funciones privadas.
+Cada edición verifica quién es el propietario. Los roles se consultan desde
+roles para habilitar administración de contenido y estadísticas. La gestión
+y asignación de roles queda reservada al administrador. El permiso de
+usuarios permite gestionar perfiles de artistas, sin modificar los roles.
+Los grupos tienen sus propios miembros, moderadores y administradores.
+
+9. DETALLES DE COMPATIBILIDAD
+Djongo necesita un modelo como contenedor de ArrayField. Para listas simples
+se utiliza JSONField. Las búsquedas de varios identificadores utilizan
+pk__in y las búsquedas de texto utilizan __icontains. Los filtros booleanos
+usan __in=[True] porque esta versión de Djongo falla con ciertas consultas
+booleanas directas.
+
+FechaDocumento es una clase corta que conserva la zona UTC al leer una
+fecha embebida. Evita que una fecha cambie cada vez que se vuelve a guardar
+el documento. No cambia el formato de almacenamiento de MongoDB.
+
+10. ALCANCE
+Es una integración académica sobre el código recibido. Las transcripciones
+compartidas tienen fragmentos faltantes: no permiten afirmar que cada línea
+nueva se haya explicado literalmente en clase. La estructura se mantiene
+en modelos, formularios, vistas por funciones, rutas y plantillas Django.
+La instalación y la conexión final a MongoDB deben comprobarse en el equipo
+que se usará para presentar.

@@ -2,31 +2,25 @@ from bson import ObjectId
 from django.urls import path, register_converter
 from .views import *
 
-class IdConvertido:
-    regex = '[0-9a-fA-F]{24}'
-    def to_python(self, value):
-        return ObjectId(value)
-    def to_url(self, value):
-        return str(value)
-
-register_converter(IdConvertido, 'oid')
-
 urlpatterns = [
-    # Categorías
+    path('colecciones/<oid:pk>/guardar/', coleccion_guardar_publicacion, name='coleccion_guardar_publicacion'),
+    path('colecciones/<oid:pk>/quitar/<int:indice>/', coleccion_quitar_publicacion, name='coleccion_quitar_publicacion'),
+    path('colecciones/<oid:pk>/colaboradores/', coleccion_colaboradores, name='coleccion_colaboradores'),
+
     path('categorias/', categorias_listar, name='categorias_listar'),
     path('categorias/crear/', categoria_crear, name='categoria_crear'),
     path('categorias/<slug:slug>/', categoria_detalle, name='categoria_detalle'),
     path('categorias/<slug:slug>/actualizar/', categoria_actualizar, name='categoria_actualizar'),
     path('categorias/<slug:slug>/eliminar/', categoria_eliminar, name='categoria_eliminar'),
 
-    # Colecciones
+
     path('colecciones/', colecciones_listar, name='colecciones_listar'),
     path('colecciones/crear/', coleccion_crear, name='coleccion_crear'),
     path('colecciones/<oid:pk>/', coleccion_detalle, name='coleccion_detalle'),
     path('colecciones/<oid:pk>/actualizar/', coleccion_actualizar, name='coleccion_actualizar'),
     path('colecciones/<oid:pk>/eliminar/', coleccion_eliminar, name='coleccion_eliminar'),
 
-    # Publicaciones
+
     path('publicaciones/', publicaciones_listar, name='publicaciones_listar'),
     path('publicaciones/buscar/', publicaciones_buscar, name='publicaciones_buscar'),
     path('publicaciones/en-debate/', publicaciones_en_debate, name='publicaciones_en_debate'),
@@ -42,7 +36,7 @@ urlpatterns = [
     path('publicaciones/<oid:pk>/comentarios/<int:indice>/actualizar/', comentario_actualizar, name='comentario_actualizar'),
     path('publicaciones/<oid:pk>/comentarios/<int:indice>/eliminar/', comentario_eliminar, name='comentario_eliminar'),
 
-    # Recomendaciones
+
     path('recomendaciones/', recomendaciones_listar, name='recomendaciones_listar'),
     path('recomendaciones/crear/', recomendacion_crear, name='recomendacion_crear'),
     path('recomendaciones/marcar-vistas/', recomendaciones_marcar_vistas, name='recomendaciones_marcar_vistas'),

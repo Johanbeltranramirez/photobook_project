@@ -1,0 +1,8 @@
+{% extends 'base.html' %}{% block contenido %}
+<h1>{{ perfil.nombreUsuario }}</h1><p>{{ perfil.rol|capfirst }}</p>
+{% if puede_ver %}{% if perfil.imagenPerfil %}<img class="imagen_detalle" src="{{ perfil.imagenPerfil }}" alt="Perfil de {{ perfil.nombreUsuario }}" width="180">{% endif %}<p>{{ perfil.biografia|default:'Sin biografía' }}</p>{% if perfil.privacidad.correoVisible or propio %}<p>{{ perfil.correo }}</p>{% endif %}<p>{{ perfil.seguidores|length }} seguidores · {{ perfil.siguiendo|length }} seguidos</p>{% else %}<p>Este perfil es privado.</p>{% endif %}
+<div class="acciones">{% if propio or permiso_usuarios %}<a class="boton" href="{% url 'perfil_actualizar' perfil.nombreUsuario %}">Editar perfil</a><a class="boton secundario" href="{% url 'perfil_eliminar' perfil.nombreUsuario %}">Desactivar cuenta</a>{% endif %}
+{% if usuario_actual.rol == 'administrador' %}<a class="boton secundario" href="{% url 'asignar_rol' perfil.nombreUsuario %}">Asignar rol</a>{% endif %}
+{% if not propio %}<form method="post" action="{% url 'seguir_usuario' perfil.nombreUsuario %}">{% csrf_token %}<button>Seguir / dejar de seguir</button></form><a class="boton secundario" href="{% url 'mensaje_crear' %}">Enviar mensaje</a>{% endif %}</div>
+{% if puede_ver %}<h2>Publicaciones</h2>{% include 'comunes/tarjetas.html' %}{% endif %}
+{% endblock %}
