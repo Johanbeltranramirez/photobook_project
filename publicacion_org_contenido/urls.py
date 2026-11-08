@@ -3,6 +3,7 @@ from django.urls import path, register_converter
 from .views import *
 
 class IdConvertido:
+    regex = '[0-9a-fA-F]{24}'
     def to_python(self, value):
         return ObjectId(value)
     def to_url(self, value):
