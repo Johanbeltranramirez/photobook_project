@@ -33,7 +33,7 @@ class Usuario(models.Model):
     contrasena = models.CharField(max_length=255)
     imagenPerfil = models.URLField(max_length=500,blank=True,null=True)
     biografia = models.CharField(max_length=255,blank=True,null=True)
-    rol = models.CharField(max_length=10,choices=[
+    rol = models.CharField(max_length=20,choices=[
         ("artista","Artista"),("administrador","Administrador")])
 
 
@@ -48,7 +48,7 @@ class Usuario(models.Model):
         db_table = "usuarios"
 
     def __str__(self):
-        return self.nombreUsuario
+        return str(self.nombreUsuario)
 
 class Notificacion(models.Model):
     _id = models.ObjectIdField()
