@@ -1,0 +1,3 @@
+{% extends 'base.html' %}{% block contenido %}<h1>Notificaciones</h1>
+{% for notificacion in notificaciones %}<article class="fila"><p>{{ notificacion.mensaje }}</p><small>{{ notificacion.fechaCreacion|date:'d/m/Y H:i' }}</small><div class="acciones">{% if not notificacion.notificacionLeer %}<form method="post" action="{% url 'notificacion_leer' notificacion.pk %}">{% csrf_token %}<button>Marcar como leída</button></form>{% else %}<span>Leída</span>{% endif %}<a href="{% url 'notificacion_eliminar' notificacion.pk %}">Eliminar</a></div></article>{% empty %}<p>No tienes notificaciones.</p>{% endfor %}
+{% endblock %}

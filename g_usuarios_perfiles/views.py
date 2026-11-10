@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 from publicacion_org_contenido.models import Publicacion
 from photobook.consultas import documentos, existe_bloqueo
-from .acceso import sesion_requerida, comprobar_propietario, puede_administrar
+from .acceso import sesion_requerida, comprobar_propietario, puede_administrar, puede_gestionar_usuario, registrar_accion
 from .forms import FormularioRegistro, FormularioIngreso, FormularioPerfil
 from .models import Usuario, Notificacion
 
@@ -15,7 +15,7 @@ def inicio(solicitud):
     publicaciones = Publicacion.objects.filter(estado='publicado').order_by('-fechaPublicacion')
     if solicitud.usuario:
         publicaciones = [dato for dato in publicaciones if not existe_bloqueo(solicitud.usuario.nombreUsuario, dato.autor['nombreUsuario'], 'contenido')]
-    return render(solicitud, 'inicio.html', {'publicaciones': publicaciones[:12]})
+    return render(solicitud, 'usuarios/inicio.html', {'publicaciones': publicaciones[:12]})
 
 
 @require_http_methods(['GET', 'POST'])
@@ -56,11 +56,12 @@ def cerrar_sesion(solicitud):
 
 @sesion_requerida
 def usuarios_listar(solicitud):
-    usuarios = Usuario.objects.filter(activo__in=[True]).order_by('nombreUsuario')
+    es_gestor = puede_administrar(solicitud.usuario, 'permiso_usuarios')
+    usuarios = (Usuario.objects.all() if es_gestor else Usuario.objects.filter(activo__in=[True])).order_by('nombreUsuario')
     texto = solicitud.GET.get('buscar', '').strip()
     if texto:
         usuarios = usuarios.filter(nombreUsuario__icontains=texto)
-    return render(solicitud, 'usuarios/lista.html', {'usuarios': usuarios})
+    return render(solicitud, 'usuarios/lista.html', {'usuarios': usuarios, 'es_gestor': es_gestor})
 
 
 @sesion_requerida
@@ -71,7 +72,7 @@ def perfil_detalle(solicitud, nombre):
     if existe_bloqueo(solicitud.usuario.nombreUsuario, nombre, 'contenido'):
         raise PermissionDenied('Este perfil no está disponible.')
     publicaciones = documentos(Publicacion, {'autor.nombreUsuario': nombre, 'estado': 'publicado'}) if puede_ver else []
-    return render(solicitud, 'usuarios/detalle.html', {'perfil': usuario, 'propio': propio, 'puede_ver': puede_ver, 'publicaciones': publicaciones})
+    return render(solicitud, 'usuarios/detalle.html', {'perfil': usuario, 'propio': propio, 'puede_ver': puede_ver, 'puede_editar': puede_gestionar_usuario(solicitud.usuario, usuario), 'publicaciones': publicaciones})
 
 
 @sesion_requerida
@@ -103,6 +104,8 @@ def perfil_eliminar(solicitud, nombre):
     if solicitud.method == 'POST':
         usuario.activo = False
         usuario.save()
+        if solicitud.usuario.pk != usuario.pk:
+            registrar_accion(solicitud.usuario, 'Desactivar usuario', 'usuarios', nombre, 'Cuenta desactivada por un administrador')
         if solicitud.usuario.pk == usuario.pk:
             solicitud.session.flush()
         return redirect('inicio')

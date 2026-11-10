@@ -1,4 +1,47 @@
-{% extends 'base.html' %}{% block contenido %}<h1>Grupos</h1><a class="boton" href="{% url 'grupo_crear' %}">Crear grupo</a>
-<form method="get"><label>Buscar grupo<input name="q" value="{{ request.GET.q }}"></label><button>Buscar</button></form>
-{% for grupo in datos.grupos %}<article class="fila"><h2><a href="{% url 'grupo_detalle' grupo.pk %}">{{ grupo.nombre }}</a></h2><p>{{ grupo.descripcion }}</p><small>{{ grupo.tipo|capfirst }} · {{ grupo.totalMiembros }} miembros</small></article>{% empty %}<p>No hay grupos para mostrar.</p>{% endfor %}
+{% extends 'base.html' %}
+{% block contenido %}
+
+<div class="encabezado_pagina">
+  <div>
+    <p class="sobre_titulo">COMUNIDAD</p>
+    <h1>Grupos</h1>
+  </div>
+  <a class="boton" href="{% url 'grupo_crear' %}">+ Crear grupo</a>
+</div>
+
+<form method="get" class="buscador" role="search">
+  <label for="buscar_grupo" class="solo_lectores">Buscar grupo</label>
+  <input id="buscar_grupo" type="search" name="q" value="{{ request.GET.q }}" placeholder="Buscar grupo por nombre">
+  <button type="submit">Buscar</button>
+</form>
+
+{% if datos.grupos %}
+  <ul class="lista_grupos">
+    {% for grupo in datos.grupos %}
+      <li class="grupo">
+        <span class="grupo_avatar" aria-hidden="true">{{ grupo.nombre|slice:":2"|capfirst }}</span>
+        <div class="grupo_info">
+          <h2><a href="{% url 'grupo_detalle' grupo.pk %}">{{ grupo.nombre }}</a></h2>
+          <p>{{ grupo.descripcion }}</p>
+          <div class="grupo_meta">
+            <span class="etiqueta">{{ grupo.tipo|capfirst }}</span>
+            <span>{{ grupo.totalMiembros }} miembro{{ grupo.totalMiembros|pluralize }}</span>
+          </div>
+        </div>
+        <a class="boton secundario" href="{% url 'grupo_detalle' grupo.pk %}" aria-label="Ver grupo {{ grupo.nombre }}">Ver grupo</a>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="vacio">
+    {% if request.GET.q %}
+      <p><strong>No encontramos grupos con "{{ request.GET.q }}".</strong></p>
+      <p>Revisa la ortografía o prueba con otra palabra.</p>
+    {% else %}
+      <p><strong>Aún no hay grupos.</strong></p>
+      <p>Crea el primero para empezar a compartir.</p>
+    {% endif %}
+  </div>
+{% endif %}
+
 {% endblock %}

@@ -8,7 +8,7 @@ Usa Python 3.10 y un servidor MongoDB en ejecución. Abre PowerShell en la carpe
 
 ```powershell
 py -3.10 -m venv venv310
-.\venv310\Scripts\Activate.ps1
+.\venv310\Scripts\Activate
 python -m pip install -r requirements.txt
 python manage.py check
 python manage.py preparar_base
