@@ -1,4 +1,3 @@
-
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -6,16 +5,25 @@ from django.db import connection
 from django.db.models import Q
 from django.core.exceptions import ValidationError
 from django.http import Http404
-from .models import Categoria, Mensaje, Grupo, Moderacion
-from .arrays import *
- 
- 
-"""MENSAJES VIEWS"""
-def mensajes_listar(request):
-    usuario = request.GET.get('usuario')
-    con = request.GET.get('con')
-    leido = request.GET.get('leido')
-    sentido = 'fechaEnvio' if request.GET.get('orden') == 'antiguos' else '-fechaEnvio'
+from .models import Mensaje, Grupo, Moderacion
+from publicacion_org_contenido.models import Categoria
+from admin_contrl_sys import views as administracion
+from .opciones import *
+from .forms import FormularioMensaje, FormularioGrupo, FormularioBloqueo
+from g_usuarios_perfiles.models import Usuario, Notificacion
+from g_usuarios_perfiles.acceso import sesion_requerida, administrador_requerido, comprobar_propietario, resumen_usuario
+from photobook.consultas import documentos, existe_bloqueo
+from django.core.exceptions import PermissionDenied
+from django.views.decorators.http import require_http_methods, require_POST
+
+
+@sesion_requerida
+@require_http_methods(['GET'])
+def mensajes_listar(solicitud):
+    usuario = solicitud.usuario.nombreUsuario
+    con = solicitud.GET.get('con')
+    leido = solicitud.GET.get('leido')
+    sentido = 'fechaEnvio' if solicitud.GET.get('orden') == 'antiguos' else '-fechaEnvio'
     coleccion_mongo = connection.cursor().db_conn[Mensaje._meta.db_table]
     filtro = {}
     if usuario and con:
@@ -32,36 +40,46 @@ def mensajes_listar(request):
     mensajes = Mensaje.objects.all()
     if filtro:
         ids = [documento['_id'] for documento in coleccion_mongo.find(filtro, {'_id': 1})]
-        mensajes = mensajes.filter(id_buscar=ids)
+        mensajes = mensajes.filter(pk__in=ids)
     mensajes = mensajes.order_by(sentido)
-    data = {'mensajes': mensajes[:50], 'total': mensajes.count()}
-    return render(request, 'mensajes_lista.html', {'data': data})
- 
-def mensajes_no_leidos(request):
-    usuario = request.GET.get('usuario')
+    datos = {'mensajes': mensajes[:50], 'total': mensajes.count()}
+    return render(solicitud, 'int_social_comunidad/mensajes_lista.html', {'datos': datos})
+
+@sesion_requerida
+@require_http_methods(['GET'])
+def mensajes_no_leidos(solicitud):
+    usuario = solicitud.usuario.nombreUsuario
     ids = []
     if usuario:
         filtro = {'receptor.nombreUsuario': usuario, 'leido': False, 'eliminadoPor': {'$ne': usuario}}
         ids = [documento['_id'] for documento in connection.cursor().db_conn[Mensaje._meta.db_table].find(filtro, {'_id': 1})]
-    mensajes = Mensaje.objects.filter(id_buscar=ids).order_by('-fechaEnvio')
-    data = {'mensajes': mensajes[:50], 'total': mensajes.count(), 'estado': 'no leídos'}
-    return render(request, 'mensajes_lista.html', {'data': data})
- 
-def mensaje_detalle(request, pk):
+    mensajes = Mensaje.objects.filter(pk__in=ids).order_by('-fechaEnvio')
+    datos = {'mensajes': mensajes[:50], 'total': mensajes.count(), 'estado': 'no leídos'}
+    return render(solicitud, 'int_social_comunidad/mensajes_lista.html', {'datos': datos})
+
+@sesion_requerida
+@require_http_methods(['GET'])
+def mensaje_detalle(solicitud, pk):
     mensaje = get_object_or_404(Mensaje, pk=pk)
-    return render(request, 'mensaje_detalle.html', {'data': {'mensaje': mensaje}})
- 
-def mensaje_crear(request):
+    comprobar_mensaje(solicitud, mensaje)
+    return render(solicitud, 'int_social_comunidad/mensaje_detalle.html', {'datos': {'mensaje': mensaje}})
+
+@sesion_requerida
+@require_http_methods(['GET', 'POST'])
+def mensaje_crear(solicitud):
     contexto = {'accion': 'crear'}
-    if request.method == 'GET':
-        return render(request, 'mensaje_form.html', {'data': contexto})
+    valores = {'estado': 'activo'}
+    formulario = FormularioMensaje(solicitud.POST if solicitud.method == 'POST' else None, initial=valores)
+    contexto['formulario'] = formulario
+    if solicitud.method == 'GET' or not formulario.is_valid():
+        return render(solicitud, 'int_social_comunidad/mensaje_form.html', {'datos': contexto})
     errores = []
-    emisor = {'nombreUsuario': request.POST.get('emisor', ''), 'imagenPerfil': None}
-    receptor = {'nombreUsuario': request.POST.get('receptor', ''), 'imagenPerfil': None}
+    emisor = resumen_usuario(solicitud.usuario)
+    receptor = resumen_usuario(get_object_or_404(Usuario, nombreUsuario=formulario.cleaned_data['receptor'], activo__in=[True]))
     datos = {
-        'contenido': request.POST.get('contenido', '').strip() or None,
-        'tipo': request.POST.get('tipo') or 'texto',
-        'adjuntos': [url.strip() for url in request.POST.get('adjuntos', '').split(',') if url.strip()],
+        'contenido': solicitud.POST.get('contenido', '').strip() or None,
+        'tipo': solicitud.POST.get('tipo') or 'texto',
+        'adjuntos': [url.strip() for url in solicitud.POST.get('adjuntos', '').split(',') if url.strip()],
     }
     if not 3 <= len(emisor['nombreUsuario']) <= 30:
         errores.append('El emisor debe tener un nombre de usuario de 3 a 30 caracteres.')
@@ -78,19 +96,12 @@ def mensaje_crear(request):
     if datos['tipo'] != 'texto' and not datos['adjuntos']:
         errores.append('Un mensaje que no es de texto necesita al menos un adjunto.')
     if any(not PATRON_URL.match(url) for url in datos['adjuntos']):
-        errores.append('Todos los adjuntos deben ser links válidos.')
+        errores.append('Todos los adjuntos deben ser enlaces válidos.')
     if len(datos['adjuntos']) > 10:
         errores.append('Máximo 10 adjuntos por mensaje.')
-    
-    if not errores:
-        filtro = {
-            'tipo': 'bloqueo',
-            'bloqueador.nombreUsuario': receptor['nombreUsuario'],
-            'bloqueado.nombreUsuario': emisor['nombreUsuario'],
-            '$or': [{'fechaExpiracion': None}, {'fechaExpiracion': {'$gt': timezone.now()}}],
-        }
-        if connection.cursor().db_conn[Moderacion._meta.db_table].find_one(filtro, {'_id': 1}):
-            errores.append('No puedes enviar mensajes a este usuario.')
+
+    if existe_bloqueo(emisor['nombreUsuario'], receptor['nombreUsuario'], 'mensajes'):
+        errores.append('No puedes enviar mensajes a este usuario.')
     mensaje = None
     if not errores:
         datos.update(
@@ -109,33 +120,44 @@ def mensaje_crear(request):
             errores = excepcion.messages
     if errores:
         contexto['errores'] = errores
-        return render(request, 'mensaje_form.html', {'data': contexto})
+        return render(solicitud, 'int_social_comunidad/mensaje_form.html', {'datos': contexto})
     mensaje.save()
+    Notificacion.objects.create(usuarioNotificado=receptor['nombreUsuario'], usuarioOrigen=emisor['nombreUsuario'], tipo='mensaje', mensaje='Tienes un mensaje de ' + emisor['nombreUsuario'])
     return redirect('mensaje_detalle', pk=mensaje.pk)
- 
-def mensaje_marcar_leido(request, pk):
+
+@sesion_requerida
+@require_POST
+def mensaje_marcar_leido(solicitud, pk):
     mensaje = get_object_or_404(Mensaje, pk=pk)
+    comprobar_mensaje(solicitud, mensaje)
+    if mensaje.receptor['nombreUsuario'] != solicitud.usuario.nombreUsuario:
+        raise PermissionDenied('Solo el receptor puede marcarlo como leído.')
     if not mensaje.leido:
         mensaje.leido = True
         mensaje.fechaLectura = timezone.now()
         mensaje.save()
     return redirect('mensaje_detalle', pk=mensaje.pk)
- 
-def mensajes_marcar_leidos(request):
-    receptor = request.POST.get('receptor')
-    emisor = request.POST.get('emisor')
+
+@sesion_requerida
+@require_POST
+def mensajes_marcar_leidos(solicitud):
+    receptor = solicitud.usuario.nombreUsuario
+    emisor = solicitud.POST.get('emisor')
     filtro = {'receptor.nombreUsuario': receptor, 'leido': False}
     if emisor:
         filtro['emisor.nombreUsuario'] = emisor
     ids = [documento['_id'] for documento in connection.cursor().db_conn[Mensaje._meta.db_table].find(filtro, {'_id': 1})]
-    Mensaje.objects.filter(id_buscar=ids).update(leido=True, fechaLectura=timezone.now())
+    Mensaje.objects.filter(pk__in=ids).update(leido=True, fechaLectura=timezone.now())
     return redirect('mensajes_listar')
- 
-def mensaje_reaccionar(request, pk):
+
+@sesion_requerida
+@require_POST
+def mensaje_reaccionar(solicitud, pk):
     mensaje = get_object_or_404(Mensaje, pk=pk)
+    comprobar_mensaje(solicitud, mensaje)
     errores = []
-    usuario = {'nombreUsuario': request.POST.get('usuario', ''), 'imagenPerfil': None}
-    tipoReaccion = request.POST.get('tipoReaccion')
+    usuario = resumen_usuario(solicitud.usuario)
+    tipoReaccion = solicitud.POST.get('tipoReaccion')
     if not 3 <= len(usuario['nombreUsuario']) <= 30:
         errores.append('El usuario debe tener un nombre de 3 a 30 caracteres.')
     if tipoReaccion not in TIPOS_REACCION:
@@ -143,7 +165,7 @@ def mensaje_reaccionar(request, pk):
     if usuario['nombreUsuario'] not in (mensaje.emisor['nombreUsuario'], mensaje.receptor['nombreUsuario']):
         errores.append('Solo los participantes de la conversación pueden reaccionar.')
     if errores:
-        return render(request, 'mensaje_detalle.html', {'data': {'mensaje': mensaje, 'errores': errores}}, status=400)
+        return render(solicitud, 'int_social_comunidad/mensaje_detalle.html', {'datos': {'mensaje': mensaje, 'errores': errores}}, status=400)
     existente = next((reaccion for reaccion in mensaje.reacciones if reaccion['usuario']['nombreUsuario'] == usuario['nombreUsuario']), None)
     if existente is None:
         mensaje.reacciones.append({'usuario': usuario, 'tipoReaccion': tipoReaccion, 'fecha': timezone.now()})
@@ -154,15 +176,20 @@ def mensaje_reaccionar(request, pk):
         existente['fecha'] = timezone.now()
     mensaje.save()
     return redirect('mensaje_detalle', pk=mensaje.pk)
- 
-def mensaje_eliminar(request, pk):
+
+@sesion_requerida
+@require_http_methods(['GET', 'POST'])
+def mensaje_eliminar(solicitud, pk):
     mensaje = get_object_or_404(Mensaje, pk=pk)
-    usuario = request.POST.get('usuario', '')
+    comprobar_mensaje(solicitud, mensaje)
+    if solicitud.method == 'GET':
+        return render(solicitud, 'comunes/eliminar.html', {'titulo': 'Eliminar mensaje', 'objeto': mensaje.contenido})
+    usuario = solicitud.usuario.nombreUsuario
     participantes = (mensaje.emisor['nombreUsuario'], mensaje.receptor['nombreUsuario'])
     if usuario not in participantes:
         errores = ['Solo los participantes de la conversación pueden eliminar el mensaje.']
-        return render(request, 'mensaje_detalle.html', {'data': {'mensaje': mensaje, 'errores': errores}}, status=400)
-    # Eliminación "para mí": se borra de verdad cuando ambos lo eliminaron
+        return render(solicitud, 'int_social_comunidad/mensaje_detalle.html', {'datos': {'mensaje': mensaje, 'errores': errores}}, status=400)
+
     if usuario not in mensaje.eliminadoPor:
         mensaje.eliminadoPor.append(usuario)
     if all(participante in mensaje.eliminadoPor for participante in participantes):
@@ -170,54 +197,66 @@ def mensaje_eliminar(request, pk):
         return redirect('mensajes_listar')
     mensaje.save()
     return redirect('mensajes_listar')
- 
-def mensajes_depurar(request):
+
+@administrador_requerido
+@require_POST
+def mensajes_depurar(solicitud):
     ids = [documento['_id'] for documento in connection.cursor().db_conn[Mensaje._meta.db_table].find({'eliminadoPor.1': {'$exists': True}}, {'_id': 1})]
-    Mensaje.objects.filter(id_buscar=ids).delete()
+    Mensaje.objects.filter(pk__in=ids).delete()
     return redirect('mensajes_listar')
- 
- 
-"""GRUPOS VIEWS"""
-def grupos_listar(request):
-    texto = request.GET.get('q')
-    tipo = request.GET.get('tipo')
-    categoria = request.GET.get('categoria')
-    miembro = request.GET.get('miembro')
-    creador = request.GET.get('creador')
+
+
+@sesion_requerida
+@require_http_methods(['GET'])
+def grupos_listar(solicitud):
+    texto = solicitud.GET.get('q')
+    tipo = solicitud.GET.get('tipo')
+    categoria = solicitud.GET.get('categoria')
+    miembro = solicitud.GET.get('miembro')
+    creador = solicitud.GET.get('creador')
     coleccion_mongo = connection.cursor().db_conn[Grupo._meta.db_table]
-    orden = '-totalMiembros' if request.GET.get('orden') == 'populares' else 'nombre'
-    condicion = Q(estado=request.GET.get('estado') or 'activo')
+    orden = '-totalMiembros' if solicitud.GET.get('orden') == 'populares' else 'nombre'
+    condicion = Q(estado=solicitud.GET.get('estado') or 'activo')
     if texto:
-        condicion &= Q(nombre__tiene=texto) | Q(descripcion__tiene=texto)
+        condicion &= Q(nombre__icontains=texto) | Q(descripcion__icontains=texto)
     if tipo in TIPOS_GRUPO:
         condicion &= Q(tipo=tipo)
     if categoria:
-        condicion &= Q(id_buscar=[documento['_id'] for documento in coleccion_mongo.find({'categoria.slug': categoria}, {'_id': 1})])
+        condicion &= Q(pk__in=[documento['_id'] for documento in coleccion_mongo.find({'categoria.slug': categoria}, {'_id': 1})])
     if miembro:
-        condicion &= Q(id_buscar=[documento['_id'] for documento in coleccion_mongo.find({'miembros.nombreUsuario': miembro}, {'_id': 1})])
+        condicion &= Q(pk__in=[documento['_id'] for documento in coleccion_mongo.find({'miembros.nombreUsuario': miembro}, {'_id': 1})])
     if creador:
-        condicion &= Q(id_buscar=[documento['_id'] for documento in coleccion_mongo.find({'creador.nombreUsuario': creador}, {'_id': 1})])
+        condicion &= Q(pk__in=[documento['_id'] for documento in coleccion_mongo.find({'creador.nombreUsuario': creador}, {'_id': 1})])
     grupos = Grupo.objects.filter(condicion).order_by(orden)
-    data = {'grupos': grupos[:50], 'total': grupos.count()}
-    return render(request, 'grupos_lista.html', {'data': data})
- 
-def grupo_detalle(request, pk):
+    datos = {'grupos': grupos[:50], 'total': grupos.count()}
+    return render(solicitud, 'int_social_comunidad/grupos_lista.html', {'datos': datos})
+
+@sesion_requerida
+@require_http_methods(['GET'])
+def grupo_detalle(solicitud, pk):
     grupo = get_object_or_404(Grupo, pk=pk)
-    return render(request, 'grupo_detalle.html', {'data': {'grupo': grupo}})
- 
-def grupo_crear(request):
+    comprobar_grupo(solicitud, grupo)
+    miembro = next((dato for dato in grupo.miembros if dato['nombreUsuario'] == solicitud.usuario.nombreUsuario), None)
+    return render(solicitud, 'int_social_comunidad/grupo_detalle.html', {'datos': {'grupo': grupo, 'usuarios': Usuario.objects.filter(activo__in=[True]), 'es_miembro': miembro is not None, 'puede_moderar': miembro is not None and miembro['rol'] in ('administrador', 'moderador'), 'es_administrador': miembro is not None and miembro['rol'] == 'administrador'}})
+
+@sesion_requerida
+@require_http_methods(['GET', 'POST'])
+def grupo_crear(solicitud):
     contexto = {'accion': 'crear', 'categorias': Categoria.objects.all().order_by('nombre')}
-    if request.method == 'GET':
-        return render(request, 'grupo_form.html', {'data': contexto})
+    valores = {'estado': 'activo'}
+    formulario = FormularioGrupo(solicitud.POST if solicitud.method == 'POST' else None, initial=valores)
+    contexto['formulario'] = formulario
+    if solicitud.method == 'GET' or not formulario.is_valid():
+        return render(solicitud, 'int_social_comunidad/grupo_form.html', {'datos': contexto})
     errores = []
-    creador = {'nombreUsuario': request.POST.get('creador', ''), 'imagenPerfil': None}
-    categoria = Categoria.objects.filter(slug=request.POST.get('categoria')).first()
+    creador = resumen_usuario(solicitud.usuario)
+    categoria = Categoria.objects.filter(slug=solicitud.POST.get('categoria')).first()
     datos = {
-        'nombre': request.POST.get('nombre', '').strip(),
-        'descripcion': request.POST.get('descripcion') or None,
-        'tipo': request.POST.get('tipo') or 'publico',
-        'imagenUrl': request.POST.get('imagenUrl') or None,
-        'reglas': [regla.strip() for regla in request.POST.get('reglas', '').split('\n') if regla.strip()],
+        'nombre': solicitud.POST.get('nombre', '').strip(),
+        'descripcion': solicitud.POST.get('descripcion') or None,
+        'tipo': solicitud.POST.get('tipo') or 'publico',
+        'imagenUrl': solicitud.POST.get('imagenUrl') or None,
+        'reglas': [regla.strip() for regla in solicitud.POST.get('reglas', '').split('\n') if regla.strip()],
         'estado': 'activo',
     }
     if not 3 <= len(datos['nombre']) <= 80:
@@ -229,7 +268,7 @@ def grupo_crear(request):
     if datos['tipo'] not in TIPOS_GRUPO:
         errores.append('El tipo debe ser publico o privado.')
     if datos['imagenUrl'] and not PATRON_URL.match(datos['imagenUrl']):
-        errores.append('La imagenUrl debe ser un link válido.')
+        errores.append('La imagenUrl debe ser un enlace válido.')
     if not 3 <= len(creador['nombreUsuario']) <= 30:
         errores.append('El creador debe tener un nombre de usuario de 3 a 30 caracteres.')
     if categoria is None:
@@ -241,7 +280,7 @@ def grupo_crear(request):
         datos.update(
             creador=creador,
             categoria={'nombre': categoria.nombre, 'slug': categoria.slug},
-            miembros=[{**creador, 'rol': 'admin', 'fechaIngreso': timezone.now()}],
+            miembros=[{**creador, 'rol': 'administrador', 'fechaIngreso': timezone.now()}],
             foros=[],
             totalMiembros=1,
             fechaCreacion=timezone.now(),
@@ -253,28 +292,36 @@ def grupo_crear(request):
             errores = excepcion.messages
     if errores:
         contexto['errores'] = errores
-        return render(request, 'grupo_form.html', {'data': contexto})
+        return render(solicitud, 'int_social_comunidad/grupo_form.html', {'datos': contexto})
     grupo.save()
     return redirect('grupo_detalle', pk=grupo.pk)
- 
-def grupo_actualizar(request, pk):
+
+@sesion_requerida
+@require_http_methods(['GET', 'POST'])
+def grupo_actualizar(solicitud, pk):
     grupo = get_object_or_404(Grupo, pk=pk)
+    comprobar_propietario(solicitud, grupo.creador['nombreUsuario'])
     contexto = {
         'accion': 'actualizar',
         'grupo': grupo,
         'categorias': Categoria.objects.all().order_by('nombre'),
     }
-    if request.method == 'GET':
-        return render(request, 'grupo_form.html', {'data': contexto})
+    valores = {campo: getattr(grupo, campo, None) for campo in FormularioGrupo().fields}
+    valores['categoria'] = grupo.categoria['slug']
+    valores['reglas'] = '\n'.join(grupo.reglas)
+    formulario = FormularioGrupo(solicitud.POST if solicitud.method == 'POST' else None, initial=valores)
+    contexto['formulario'] = formulario
+    if solicitud.method == 'GET' or not formulario.is_valid():
+        return render(solicitud, 'int_social_comunidad/grupo_form.html', {'datos': contexto})
     errores = []
-    categoria = Categoria.objects.filter(slug=request.POST.get('categoria')).first()
+    categoria = Categoria.objects.filter(slug=solicitud.POST.get('categoria')).first()
     datos = {
-        'nombre': request.POST.get('nombre', '').strip(),
-        'descripcion': request.POST.get('descripcion') or None,
-        'tipo': request.POST.get('tipo') or 'publico',
-        'imagenUrl': request.POST.get('imagenUrl') or None,
-        'reglas': [regla.strip() for regla in request.POST.get('reglas', '').split('\n') if regla.strip()],
-        'estado': request.POST.get('estado') or 'activo',
+        'nombre': solicitud.POST.get('nombre', '').strip(),
+        'descripcion': solicitud.POST.get('descripcion') or None,
+        'tipo': solicitud.POST.get('tipo') or 'publico',
+        'imagenUrl': solicitud.POST.get('imagenUrl') or None,
+        'reglas': [regla.strip() for regla in solicitud.POST.get('reglas', '').split('\n') if regla.strip()],
+        'estado': solicitud.POST.get('estado') or 'activo',
     }
     if not 3 <= len(datos['nombre']) <= 80:
         errores.append('El nombre debe tener entre 3 y 80 caracteres.')
@@ -287,7 +334,7 @@ def grupo_actualizar(request, pk):
     if datos['estado'] not in ESTADOS_GRUPO:
         errores.append('El estado debe ser activo, archivado o suspendido.')
     if datos['imagenUrl'] and not PATRON_URL.match(datos['imagenUrl']):
-        errores.append('La imagenUrl debe ser un link válido.')
+        errores.append('La imagenUrl debe ser un enlace válido.')
     if categoria is None:
         errores.append('La categoría no existe.')
     if len(datos['reglas']) > 20 or any(len(regla) > 300 for regla in datos['reglas']):
@@ -302,22 +349,29 @@ def grupo_actualizar(request, pk):
             errores = excepcion.messages
     if errores:
         contexto['errores'] = errores
-        return render(request, 'grupo_form.html', {'data': contexto})
+        return render(solicitud, 'int_social_comunidad/grupo_form.html', {'datos': contexto})
     grupo.save()
     return redirect('grupo_detalle', pk=grupo.pk)
- 
-def grupo_eliminar(request, pk):
+
+@sesion_requerida
+@require_http_methods(['GET', 'POST'])
+def grupo_eliminar(solicitud, pk):
     grupo = get_object_or_404(Grupo, pk=pk)
+    comprobar_propietario(solicitud, grupo.creador['nombreUsuario'])
+    if solicitud.method == 'GET':
+        return render(solicitud, 'comunes/eliminar.html', {'titulo': 'Eliminar grupo', 'objeto': grupo.nombre})
     if grupo.totalMiembros > 1:
         errores = ['No se puede eliminar el grupo porque todavía tiene miembros además del creador.']
-        return render(request, 'grupo_detalle.html', {'data': {'grupo': grupo, 'errores': errores}}, status=400)
+        return render(solicitud, 'int_social_comunidad/grupo_detalle.html', {'datos': {'grupo': grupo, 'errores': errores}}, status=400)
     grupo.delete()
     return redirect('grupos_listar')
- 
-def grupo_unirse(request, pk):
+
+@sesion_requerida
+@require_POST
+def grupo_unirse(solicitud, pk):
     grupo = get_object_or_404(Grupo, pk=pk)
     errores = []
-    usuario = {'nombreUsuario': request.POST.get('usuario', ''), 'imagenPerfil': None}
+    usuario = resumen_usuario(solicitud.usuario)
     if not 3 <= len(usuario['nombreUsuario']) <= 30:
         errores.append('El usuario debe tener un nombre de 3 a 30 caracteres.')
     if grupo.estado != 'activo':
@@ -326,39 +380,47 @@ def grupo_unirse(request, pk):
         errores.append('Este grupo es privado; solo se ingresa por invitación.')
     if any(miembro['nombreUsuario'] == usuario['nombreUsuario'] for miembro in grupo.miembros):
         errores.append('Ya eres miembro de este grupo.')
+    if grupo.estado != 'activo':
+        errores.append('El grupo no está activo.')
     if len(grupo.miembros) >= 1000:
         errores.append('El grupo llegó al límite de 1000 miembros.')
     if errores:
-        return render(request, 'grupo_detalle.html', {'data': {'grupo': grupo, 'errores': errores}}, status=400)
+        return render(solicitud, 'int_social_comunidad/grupo_detalle.html', {'datos': {'grupo': grupo, 'errores': errores}}, status=400)
     grupo.miembros.append({**usuario, 'rol': 'miembro', 'fechaIngreso': timezone.now()})
     grupo.totalMiembros += 1
     grupo.save()
     return redirect('grupo_detalle', pk=grupo.pk)
- 
-def grupo_invitar(request, pk):
+
+@sesion_requerida
+@require_POST
+def grupo_invitar(solicitud, pk):
     grupo = get_object_or_404(Grupo, pk=pk)
     errores = []
-    quien = request.POST.get('invitador', '')
-    usuario = {'nombreUsuario': request.POST.get('usuario', ''), 'imagenPerfil': None}
+    quien = solicitud.usuario.nombreUsuario
+    usuario = resumen_usuario(get_object_or_404(Usuario, nombreUsuario=solicitud.POST.get('usuario', ''), activo__in=[True]))
     invitador = next((miembro for miembro in grupo.miembros if miembro['nombreUsuario'] == quien), None)
-    if invitador is None or invitador['rol'] not in ('admin', 'moderador'):
-        errores.append('Solo un admin o moderador del grupo puede invitar.')
+    if invitador is None or invitador['rol'] not in ('administrador', 'moderador'):
+        errores.append('Solo un administrador o moderador del grupo puede invitar.')
     if not 3 <= len(usuario['nombreUsuario']) <= 30:
         errores.append('El usuario debe tener un nombre de 3 a 30 caracteres.')
     if any(miembro['nombreUsuario'] == usuario['nombreUsuario'] for miembro in grupo.miembros):
         errores.append('Ese usuario ya es miembro del grupo.')
+    if grupo.estado != 'activo':
+        errores.append('El grupo no está activo.')
     if len(grupo.miembros) >= 1000:
         errores.append('El grupo llegó al límite de 1000 miembros.')
     if errores:
-        return render(request, 'grupo_detalle.html', {'data': {'grupo': grupo, 'errores': errores}}, status=400)
+        return render(solicitud, 'int_social_comunidad/grupo_detalle.html', {'datos': {'grupo': grupo, 'errores': errores}}, status=400)
     grupo.miembros.append({**usuario, 'rol': 'miembro', 'fechaIngreso': timezone.now()})
     grupo.totalMiembros += 1
     grupo.save()
     return redirect('grupo_detalle', pk=grupo.pk)
- 
-def grupo_salir(request, pk):
+
+@sesion_requerida
+@require_POST
+def grupo_salir(solicitud, pk):
     grupo = get_object_or_404(Grupo, pk=pk)
-    usuario = request.POST.get('usuario', '')
+    usuario = solicitud.usuario.nombreUsuario
     miembro = next((m for m in grupo.miembros if m['nombreUsuario'] == usuario), None)
     errores = []
     if miembro is None:
@@ -366,66 +428,74 @@ def grupo_salir(request, pk):
     elif usuario == grupo.creador['nombreUsuario']:
         errores.append('El creador no puede salir del grupo; elimínalo o transfiere el grupo.')
     if errores:
-        return render(request, 'grupo_detalle.html', {'data': {'grupo': grupo, 'errores': errores}}, status=400)
+        return render(solicitud, 'int_social_comunidad/grupo_detalle.html', {'datos': {'grupo': grupo, 'errores': errores}}, status=400)
     grupo.miembros.remove(miembro)
     grupo.totalMiembros = max(0, grupo.totalMiembros - 1)
     grupo.save()
     return redirect('grupo_detalle', pk=grupo.pk)
- 
-def grupo_cambiar_rol(request, pk):
+
+@sesion_requerida
+@require_POST
+def grupo_cambiar_rol(solicitud, pk):
     grupo = get_object_or_404(Grupo, pk=pk)
     errores = []
-    quien = request.POST.get('admin', '')
-    usuario = request.POST.get('usuario', '')
-    rol = request.POST.get('rol')
+    quien = solicitud.usuario.nombreUsuario
+    usuario = solicitud.POST.get('usuario', '')
+    rol = solicitud.POST.get('rol')
     administrador = next((m for m in grupo.miembros if m['nombreUsuario'] == quien), None)
     miembro = next((m for m in grupo.miembros if m['nombreUsuario'] == usuario), None)
-    if administrador is None or administrador['rol'] != 'admin':
-        errores.append('Solo un admin puede cambiar roles.')
+    if administrador is None or administrador['rol'] != 'administrador':
+        errores.append('Solo un administrador puede cambiar roles.')
     if miembro is None:
         errores.append('El usuario no es miembro del grupo.')
+    if rol == 'administrador' and quien != grupo.creador['nombreUsuario']:
+        errores.append('Solo el creador puede nombrar administradores.')
     if rol not in ROLES_GRUPO:
         errores.append('El rol debe ser miembro, moderador o admin.')
-    if usuario == grupo.creador['nombreUsuario'] and rol != 'admin':
+    if usuario == grupo.creador['nombreUsuario'] and rol != 'administrador':
         errores.append('El creador siempre debe ser admin.')
     if errores:
-        return render(request, 'grupo_detalle.html', {'data': {'grupo': grupo, 'errores': errores}}, status=400)
+        return render(solicitud, 'int_social_comunidad/grupo_detalle.html', {'datos': {'grupo': grupo, 'errores': errores}}, status=400)
     miembro['rol'] = rol
     grupo.save()
     return redirect('grupo_detalle', pk=grupo.pk)
- 
-def grupo_expulsar(request, pk):
+
+@sesion_requerida
+@require_POST
+def grupo_expulsar(solicitud, pk):
     grupo = get_object_or_404(Grupo, pk=pk)
     errores = []
-    quien = request.POST.get('moderador', '')
-    usuario = request.POST.get('usuario', '')
+    quien = solicitud.usuario.nombreUsuario
+    usuario = solicitud.POST.get('usuario', '')
     ejecutor = next((m for m in grupo.miembros if m['nombreUsuario'] == quien), None)
     miembro = next((m for m in grupo.miembros if m['nombreUsuario'] == usuario), None)
-    if ejecutor is None or ejecutor['rol'] not in ('admin', 'moderador'):
-        errores.append('Solo un admin o moderador puede expulsar miembros.')
+    if ejecutor is None or ejecutor['rol'] not in ('administrador', 'moderador'):
+        errores.append('Solo un administrador o moderador puede expulsar miembros.')
     if miembro is None:
         errores.append('El usuario no es miembro del grupo.')
     elif usuario == grupo.creador['nombreUsuario']:
         errores.append('No se puede expulsar al creador del grupo.')
-    elif miembro['rol'] == 'admin' and ejecutor and ejecutor['rol'] != 'admin':
-        errores.append('Un moderador no puede expulsar a un admin.')
+    elif miembro['rol'] == 'administrador' and ejecutor and ejecutor['rol'] != 'administrador':
+        errores.append('Un moderador no puede expulsar a un administrador.')
     if errores:
-        return render(request, 'grupo_detalle.html', {'data': {'grupo': grupo, 'errores': errores}}, status=400)
+        return render(solicitud, 'int_social_comunidad/grupo_detalle.html', {'datos': {'grupo': grupo, 'errores': errores}}, status=400)
     grupo.miembros.remove(miembro)
     grupo.totalMiembros = max(0, grupo.totalMiembros - 1)
     grupo.save()
     return redirect('grupo_detalle', pk=grupo.pk)
- 
-"""FOROS DE GRUPO VIEWS"""
-def foro_crear(request, pk):
+
+
+@sesion_requerida
+@require_POST
+def foro_crear(solicitud, pk):
     grupo = get_object_or_404(Grupo, pk=pk)
     errores = []
-    quien = request.POST.get('usuario', '')
-    nombre = request.POST.get('nombre', '').strip()
-    descripcion = request.POST.get('descripcion') or None
+    quien = solicitud.usuario.nombreUsuario
+    nombre = solicitud.POST.get('nombre', '').strip()
+    descripcion = solicitud.POST.get('descripcion') or None
     ejecutor = next((m for m in grupo.miembros if m['nombreUsuario'] == quien), None)
-    if ejecutor is None or ejecutor['rol'] not in ('admin', 'moderador'):
-        errores.append('Solo un admin o moderador puede crear foros.')
+    if ejecutor is None or ejecutor['rol'] not in ('administrador', 'moderador'):
+        errores.append('Solo un administrador o moderador puede crear foros.')
     if not 1 <= len(nombre) <= 80:
         errores.append('El nombre del foro debe tener entre 1 y 80 caracteres.')
     if any(foro['nombre'].lower() == nombre.lower() for foro in grupo.foros):
@@ -435,7 +505,7 @@ def foro_crear(request, pk):
     if len(grupo.foros) >= 10:
         errores.append('El grupo llegó al límite de 10 foros.')
     if errores:
-        return render(request, 'grupo_detalle.html', {'data': {'grupo': grupo, 'errores': errores}}, status=400)
+        return render(solicitud, 'int_social_comunidad/grupo_detalle.html', {'datos': {'grupo': grupo, 'errores': errores}}, status=400)
     grupo.foros.append({
         'nombre': nombre,
         'descripcion': descripcion,
@@ -444,30 +514,34 @@ def foro_crear(request, pk):
     })
     grupo.save()
     return redirect('grupo_detalle', pk=grupo.pk)
- 
-def foro_eliminar(request, pk, indice_foro):
+
+@sesion_requerida
+@require_POST
+def foro_eliminar(solicitud, pk, indice_foro):
     grupo = get_object_or_404(Grupo, pk=pk)
     if not 0 <= indice_foro < len(grupo.foros):
         raise Http404
-    quien = request.POST.get('usuario', '')
+    quien = solicitud.usuario.nombreUsuario
     ejecutor = next((m for m in grupo.miembros if m['nombreUsuario'] == quien), None)
-    if ejecutor is None or ejecutor['rol'] not in ('admin', 'moderador'):
-        errores = ['Solo un admin o moderador puede eliminar foros.']
-        return render(request, 'grupo_detalle.html', {'data': {'grupo': grupo, 'errores': errores}}, status=400)
+    if ejecutor is None or ejecutor['rol'] not in ('administrador', 'moderador'):
+        errores = ['Solo un administrador o moderador puede eliminar foros.']
+        return render(solicitud, 'int_social_comunidad/grupo_detalle.html', {'datos': {'grupo': grupo, 'errores': errores}}, status=400)
     del grupo.foros[indice_foro]
     grupo.save()
     return redirect('grupo_detalle', pk=grupo.pk)
- 
-def foro_comentar(request, pk, indice_foro):
+
+@sesion_requerida
+@require_POST
+def foro_comentar(solicitud, pk, indice_foro):
     grupo = get_object_or_404(Grupo, pk=pk)
     if not 0 <= indice_foro < len(grupo.foros):
         raise Http404
     foro = grupo.foros[indice_foro]
     errores = []
-    autor = {'nombreUsuario': request.POST.get('autor', ''), 'imagenPerfil': None}
-    titulo = request.POST.get('titulo') or None
-    contenido = request.POST.get('contenido', '').strip()
-    formato = request.POST.get('formato') or 'texto'
+    autor = resumen_usuario(solicitud.usuario)
+    titulo = solicitud.POST.get('titulo') or None
+    contenido = solicitud.POST.get('contenido', '').strip()
+    formato = solicitud.POST.get('formato') or 'texto'
     if not any(m['nombreUsuario'] == autor['nombreUsuario'] for m in grupo.miembros):
         errores.append('Solo los miembros del grupo pueden comentar en sus foros.')
     if titulo and len(titulo) > 150:
@@ -479,7 +553,7 @@ def foro_comentar(request, pk, indice_foro):
     if len(foro['comentarios']) >= 200:
         errores.append('El foro llegó al límite de 200 comentarios.')
     if errores:
-        return render(request, 'grupo_detalle.html', {'data': {'grupo': grupo, 'errores': errores}}, status=400)
+        return render(solicitud, 'int_social_comunidad/grupo_detalle.html', {'datos': {'grupo': grupo, 'errores': errores}}, status=400)
     foro['comentarios'].append({
         'autor': autor,
         'titulo': titulo,
@@ -498,110 +572,91 @@ def foro_comentar(request, pk, indice_foro):
     })
     grupo.save()
     return redirect('grupo_detalle', pk=grupo.pk)
- 
-def foro_comentario_actualizar(request, pk, indice_foro, indice):
+
+@sesion_requerida
+@require_POST
+def foro_comentario_actualizar(solicitud, pk, indice_foro, indice):
     grupo = get_object_or_404(Grupo, pk=pk)
+    comprobar_grupo(solicitud, grupo)
     if not 0 <= indice_foro < len(grupo.foros):
         raise Http404
     comentarios = grupo.foros[indice_foro]['comentarios']
     if not 0 <= indice < len(comentarios):
         raise Http404
+    comprobar_propietario(solicitud, comentarios[indice]['autor']['nombreUsuario'])
     errores = []
-    contenido = request.POST.get('contenido', '').strip()
+    contenido = solicitud.POST.get('contenido', '').strip()
     if comentarios[indice]['cerrado']:
         errores.append('El comentario está cerrado y no admite ediciones.')
     if not 1 <= len(contenido) <= 1000:
         errores.append('El comentario debe tener entre 1 y 1000 caracteres.')
     if errores:
-        return render(request, 'grupo_detalle.html', {'data': {'grupo': grupo, 'errores': errores}}, status=400)
+        return render(solicitud, 'int_social_comunidad/grupo_detalle.html', {'datos': {'grupo': grupo, 'errores': errores}}, status=400)
     comentarios[indice]['contenido'] = contenido
     comentarios[indice]['estado'] = 'editado'
     comentarios[indice]['fechaEdicion'] = timezone.now()
     grupo.save()
     return redirect('grupo_detalle', pk=grupo.pk)
- 
-def foro_comentario_moderar(request, pk, indice_foro, indice):
-    """Fija/desfija o cierra/abre un comentario del foro (solo admin o moderador)."""
+
+@sesion_requerida
+@require_POST
+def foro_comentario_moderar(solicitud, pk, indice_foro, indice):
+
     grupo = get_object_or_404(Grupo, pk=pk)
     if not 0 <= indice_foro < len(grupo.foros):
         raise Http404
     comentarios = grupo.foros[indice_foro]['comentarios']
     if not 0 <= indice < len(comentarios):
         raise Http404
-    quien = request.POST.get('usuario', '')
-    accion = request.POST.get('accion')
+    quien = solicitud.usuario.nombreUsuario
+    accion = solicitud.POST.get('accion')
     ejecutor = next((m for m in grupo.miembros if m['nombreUsuario'] == quien), None)
     errores = []
-    if ejecutor is None or ejecutor['rol'] not in ('admin', 'moderador'):
-        errores.append('Solo un admin o moderador puede moderar comentarios.')
+    if ejecutor is None or ejecutor['rol'] not in ('administrador', 'moderador'):
+        errores.append('Solo un administrador o moderador puede moderar comentarios.')
     if accion not in ('fijar', 'cerrar'):
         errores.append('La acción debe ser fijar o cerrar.')
     if errores:
-        return render(request, 'grupo_detalle.html', {'data': {'grupo': grupo, 'errores': errores}}, status=400)
+        return render(solicitud, 'int_social_comunidad/grupo_detalle.html', {'datos': {'grupo': grupo, 'errores': errores}}, status=400)
     campo = 'fijado' if accion == 'fijar' else 'cerrado'
     comentarios[indice][campo] = not comentarios[indice][campo]
     grupo.save()
     return redirect('grupo_detalle', pk=grupo.pk)
- 
-def foro_comentario_eliminar(request, pk, indice_foro, indice):
+
+@sesion_requerida
+@require_POST
+def foro_comentario_eliminar(solicitud, pk, indice_foro, indice):
     grupo = get_object_or_404(Grupo, pk=pk)
     if not 0 <= indice_foro < len(grupo.foros):
         raise Http404
     comentarios = grupo.foros[indice_foro]['comentarios']
     if not 0 <= indice < len(comentarios):
         raise Http404
-    quien = request.POST.get('usuario', '')
+    quien = solicitud.usuario.nombreUsuario
     ejecutor = next((m for m in grupo.miembros if m['nombreUsuario'] == quien), None)
     es_autor = comentarios[indice]['autor']['nombreUsuario'] == quien
-    if not es_autor and (ejecutor is None or ejecutor['rol'] not in ('admin', 'moderador')):
-        errores = ['Solo el autor, un admin o un moderador puede eliminar el comentario.']
-        return render(request, 'grupo_detalle.html', {'data': {'grupo': grupo, 'errores': errores}}, status=400)
+    if not es_autor and (ejecutor is None or ejecutor['rol'] not in ('administrador', 'moderador')):
+        errores = ['Solo el autor, un administrador o un moderador puede eliminar el comentario.']
+        return render(solicitud, 'int_social_comunidad/grupo_detalle.html', {'datos': {'grupo': grupo, 'errores': errores}}, status=400)
     del comentarios[indice]
     grupo.save()
     return redirect('grupo_detalle', pk=grupo.pk)
- 
- 
-"""MODERACIÓN VIEWS"""
-def moderaciones_listar(request):
-    tipo = request.GET.get('tipo')
-    estado = request.GET.get('estado')
-    usuario = request.GET.get('usuario')
-    coleccion_mongo = connection.cursor().db_conn[Moderacion._meta.db_table]
-    filtro = {}
-    if usuario:
-        filtro['$or'] = [
-            {'reportante.nombreUsuario': usuario},
-            {'moderador.nombreUsuario': usuario},
-            {'bloqueador.nombreUsuario': usuario},
-            {'bloqueado.nombreUsuario': usuario},
-            {'objetivo.nombreUsuario': usuario},
-        ]
-    moderaciones = Moderacion.objects.all()
-    if filtro:
-        ids = [documento['_id'] for documento in coleccion_mongo.find(filtro, {'_id': 1})]
-        moderaciones = moderaciones.filter(id_buscar=ids)
-    if tipo in TIPOS_MODERACION:
-        moderaciones = moderaciones.filter(tipo=tipo)
-    if estado in ESTADOS_REPORTE:
-        moderaciones = moderaciones.filter(estado=estado)
-    moderaciones = moderaciones.order_by('-fechaCreacion')
-    data = {'moderaciones': moderaciones[:50], 'total': moderaciones.count()}
-    return render(request, 'moderacion_lista.html', {'data': data})
- 
-def reportes_pendientes(request):
-    motivo = request.GET.get('motivo')
-    tipo_elemento = request.GET.get('tipoElemento')
-    reportes = Moderacion.objects.filter(tipo='reporte', estado='pendiente')
-    if motivo in MOTIVOS_REPORTE:
-        reportes = reportes.filter(motivo=motivo)
-    if tipo_elemento in TIPOS_ELEMENTO:
-        reportes = reportes.filter(tipoElemento=tipo_elemento)
-    reportes = reportes.order_by('fechaCreacion')
-    data = {'moderaciones': reportes[:50], 'total': reportes.count(), 'estado': 'pendientes'}
-    return render(request, 'moderacion_lista.html', {'data': data})
- 
-def bloqueos_activos(request):
-    usuario = request.GET.get('usuario')
+
+
+@sesion_requerida
+@require_http_methods(['GET'])
+def moderaciones_listar(solicitud):
+    return bloqueos_activos(solicitud)
+
+@sesion_requerida
+@require_http_methods(['GET'])
+def reportes_pendientes(solicitud):
+    return administracion.consultar_reportes(solicitud, pendientes=True)
+
+@sesion_requerida
+@require_http_methods(['GET'])
+def bloqueos_activos(solicitud):
+    usuario = solicitud.usuario.nombreUsuario
     filtro = {
         'tipo': 'bloqueo',
         '$or': [{'fechaExpiracion': None}, {'fechaExpiracion': {'$gt': timezone.now()}}],
@@ -609,121 +664,41 @@ def bloqueos_activos(request):
     if usuario:
         filtro['bloqueador.nombreUsuario'] = usuario
     ids = [documento['_id'] for documento in connection.cursor().db_conn[Moderacion._meta.db_table].find(filtro, {'_id': 1})]
-    bloqueos = Moderacion.objects.filter(id_buscar=ids).order_by('-fechaCreacion')
-    data = {'moderaciones': bloqueos[:50], 'total': bloqueos.count(), 'estado': 'activos'}
-    return render(request, 'moderacion_lista.html', {'data': data})
- 
-def moderacion_detalle(request, pk):
-    moderacion = get_object_or_404(Moderacion, pk=pk)
-    return render(request, 'moderacion_detalle.html', {'data': {'moderacion': moderacion}})
- 
-def reporte_crear(request):
+    bloqueos = Moderacion.objects.filter(pk__in=ids).order_by('-fechaCreacion')
+    datos = {'moderaciones': bloqueos[:50], 'total': bloqueos.count(), 'estado': 'activos'}
+    return render(solicitud, 'int_social_comunidad/moderacion_lista.html', {'datos': datos})
+
+@sesion_requerida
+@require_http_methods(['GET'])
+def moderacion_detalle(solicitud, pk):
+    moderacion = get_object_or_404(Moderacion, pk=pk, tipo='bloqueo')
+    comprobar_propietario(solicitud, moderacion.bloqueador['nombreUsuario'])
+    return render(solicitud, 'int_social_comunidad/moderacion_detalle.html', {'datos': {'moderacion': moderacion}})
+
+@sesion_requerida
+@require_http_methods(['GET', 'POST'])
+def reporte_crear(solicitud):
+    return administracion.crear_reporte(solicitud)
+
+@sesion_requerida
+@require_http_methods(['GET', 'POST'])
+def reporte_resolver(solicitud, pk):
+    return administracion.resolver_reporte(solicitud, pk)
+
+@sesion_requerida
+@require_http_methods(['GET', 'POST'])
+def bloqueo_crear(solicitud):
     contexto = {'accion': 'crear'}
-    if request.method == 'GET':
-        return render(request, 'reporte_form.html', {'data': contexto})
+    valores = {'estado': 'activo'}
+    formulario = FormularioBloqueo(solicitud.POST if solicitud.method == 'POST' else None, initial=valores)
+    contexto['formulario'] = formulario
+    if solicitud.method == 'GET' or not formulario.is_valid():
+        return render(solicitud, 'int_social_comunidad/bloqueo_form.html', {'datos': contexto})
     errores = []
-    reportante = {'nombreUsuario': request.POST.get('reportante', ''), 'imagenPerfil': None}
-    objetivo = {
-        'publicacionUrl': request.POST.get('publicacionUrl') or None,
-        'nombreUsuario': request.POST.get('nombreUsuarioObjetivo') or None,
-    }
-    datos = {
-        'tipo': 'reporte',
-        'tipoElemento': request.POST.get('tipoElemento'),
-        'motivo': request.POST.get('motivo'),
-        'descripcion': request.POST.get('descripcion') or None,
-        'estado': 'pendiente',
-    }
-    if not 3 <= len(reportante['nombreUsuario']) <= 30:
-        errores.append('El reportante debe tener un nombre de usuario de 3 a 30 caracteres.')
-    if datos['tipoElemento'] not in TIPOS_ELEMENTO:
-        errores.append('El tipo de elemento debe ser publicacion, comentario o usuario.')
-    if datos['motivo'] not in MOTIVOS_REPORTE:
-        errores.append('El motivo del reporte no es válido.')
-    if datos['descripcion'] and len(datos['descripcion']) > 1000:
-        errores.append('La descripción admite máximo 1000 caracteres.')
-    if datos['tipoElemento'] in ('publicacion', 'comentario'):
-        if not objetivo['publicacionUrl'] or not PATRON_URL.match(objetivo['publicacionUrl']):
-            errores.append('El reporte necesita la URL de la publicación como un link válido.')
-    if datos['tipoElemento'] == 'usuario' or objetivo['nombreUsuario']:
-        if not objetivo['nombreUsuario'] or not 3 <= len(objetivo['nombreUsuario']) <= 30:
-            errores.append('El usuario reportado debe tener un nombre de usuario de 3 a 30 caracteres.')
-    if objetivo['nombreUsuario'] == reportante['nombreUsuario']:
-        errores.append('No puedes reportarte a ti mismo.')
-    if not errores:
-        filtro = {
-            'tipo': 'reporte',
-            'estado': 'pendiente',
-            'reportante.nombreUsuario': reportante['nombreUsuario'],
-            'tipoElemento': datos['tipoElemento'],
-            'objetivo.publicacionUrl': objetivo['publicacionUrl'],
-            'objetivo.nombreUsuario': objetivo['nombreUsuario'],
-        }
-        if connection.cursor().db_conn[Moderacion._meta.db_table].find_one(filtro, {'_id': 1}):
-            errores.append('Ya tienes un reporte pendiente sobre este elemento.')
-    moderacion = None
-    if not errores:
-        datos.update(
-            reportante=reportante,
-            objetivo=objetivo,
-            fechaCreacion=timezone.now(),
-        )
-        moderacion = Moderacion(**datos)
-        try:
-            moderacion.full_clean(validate_unique=False)
-        except ValidationError as excepcion:
-            errores = excepcion.messages
-    if errores:
-        contexto['errores'] = errores
-        return render(request, 'reporte_form.html', {'data': contexto})
-    moderacion.save()
-    return redirect('moderacion_detalle', pk=moderacion.pk)
- 
-def reporte_resolver(request, pk):
-    moderacion = get_object_or_404(Moderacion, pk=pk, tipo='reporte')
-    contexto = {'accion': 'resolver', 'moderacion': moderacion}
-    if request.method == 'GET':
-        return render(request, 'reporte_resolver_form.html', {'data': contexto})
-    errores = []
-    moderador = {'nombreUsuario': request.POST.get('moderador', ''), 'imagenPerfil': None}
-    estado = request.POST.get('estado')
-    accion = request.POST.get('accionTomada') or None
-    if moderacion.estado in ('resuelto', 'descartado'):
-        errores.append('El reporte ya fue resuelto.')
-    if not 3 <= len(moderador['nombreUsuario']) <= 30:
-        errores.append('El moderador debe tener un nombre de usuario de 3 a 30 caracteres.')
-    if moderador['nombreUsuario'] == moderacion.reportante['nombreUsuario']:
-        errores.append('El moderador no puede resolver un reporte propio.')
-    if estado not in ('resuelto', 'descartado'):
-        errores.append('El estado debe ser resuelto o descartado.')
-    if estado == 'resuelto' and accion not in ACCIONES_MODERACION:
-        errores.append('Un reporte resuelto necesita una acción tomada válida.')
-    if estado == 'descartado':
-        accion = 'ninguna'
-    if errores:
-        contexto['errores'] = errores
-        return render(request, 'reporte_resolver_form.html', {'data': contexto})
-    moderacion.estado = estado
-    moderacion.moderador = moderador
-    moderacion.accionTomada = accion
-    moderacion.fechaResolucion = timezone.now()
-    try:
-        moderacion.full_clean(validate_unique=False)
-    except ValidationError as excepcion:
-        contexto['errores'] = excepcion.messages
-        return render(request, 'reporte_resolver_form.html', {'data': contexto})
-    moderacion.save()
-    return redirect('moderacion_detalle', pk=moderacion.pk)
- 
-def bloqueo_crear(request):
-    contexto = {'accion': 'crear'}
-    if request.method == 'GET':
-        return render(request, 'bloqueo_form.html', {'data': contexto})
-    errores = []
-    bloqueador = {'nombreUsuario': request.POST.get('bloqueador', ''), 'imagenPerfil': None}
-    bloqueado = {'nombreUsuario': request.POST.get('bloqueado', ''), 'imagenPerfil': None}
-    ambito = request.POST.get('ambito') or 'total'
-    expiracion_texto = request.POST.get('fechaExpiracion')
+    bloqueador = resumen_usuario(solicitud.usuario)
+    bloqueado = resumen_usuario(get_object_or_404(Usuario, nombreUsuario=formulario.cleaned_data['bloqueado'], activo__in=[True]))
+    ambito = solicitud.POST.get('ambito') or 'total'
+    expiracion_texto = solicitud.POST.get('fechaExpiracion')
     expiracion = None
     if expiracion_texto:
         expiracion = parse_datetime(expiracion_texto)
@@ -768,28 +743,61 @@ def bloqueo_crear(request):
             errores = excepcion.messages
     if errores:
         contexto['errores'] = errores
-        return render(request, 'bloqueo_form.html', {'data': contexto})
+        return render(solicitud, 'int_social_comunidad/bloqueo_form.html', {'datos': contexto})
     moderacion.save()
     return redirect('moderacion_detalle', pk=moderacion.pk)
- 
-def bloqueo_eliminar(request, pk):
-    """Desbloquear: solo el bloqueador puede quitar su propio bloqueo."""
+
+@sesion_requerida
+@require_http_methods(['GET', 'POST'])
+def bloqueo_eliminar(solicitud, pk):
+
     moderacion = get_object_or_404(Moderacion, pk=pk, tipo='bloqueo')
-    if request.POST.get('usuario') != moderacion.bloqueador['nombreUsuario']:
+    comprobar_propietario(solicitud, moderacion.bloqueador['nombreUsuario'])
+    if solicitud.method == 'GET':
+        return render(solicitud, 'comunes/eliminar.html', {'titulo': 'Eliminar moderacion', 'objeto': moderacion.ambito})
+    if solicitud.usuario.nombreUsuario != moderacion.bloqueador['nombreUsuario'] and solicitud.usuario.rol != 'administrador':
         errores = ['Solo quien creó el bloqueo puede quitarlo.']
-        return render(request, 'moderacion_detalle.html', {'data': {'moderacion': moderacion, 'errores': errores}}, status=400)
+        return render(solicitud, 'int_social_comunidad/moderacion_detalle.html', {'datos': {'moderacion': moderacion, 'errores': errores}}, status=400)
     moderacion.delete()
     return redirect('moderaciones_listar')
- 
-def moderacion_eliminar(request, pk):
-    moderacion = get_object_or_404(Moderacion, pk=pk)
-    if moderacion.tipo == 'reporte' and moderacion.estado == 'pendiente':
-        errores = ['No se puede eliminar un reporte pendiente; resuélvelo o descártalo primero.']
-        return render(request, 'moderacion_detalle.html', {'data': {'moderacion': moderacion, 'errores': errores}}, status=400)
-    moderacion.delete()
-    return redirect('moderaciones_listar')
- 
-def bloqueos_depurar(request):
+
+@sesion_requerida
+@require_http_methods(['GET', 'POST'])
+def moderacion_eliminar(solicitud, pk):
+    return bloqueo_eliminar(solicitud, pk)
+
+@administrador_requerido
+@require_POST
+def bloqueos_depurar(solicitud):
     ids = [documento['_id'] for documento in connection.cursor().db_conn[Moderacion._meta.db_table].find({'tipo': 'bloqueo', 'fechaExpiracion': {'$lte': timezone.now()}}, {'_id': 1})]
-    Moderacion.objects.filter(id_buscar=ids).delete()
+    Moderacion.objects.filter(pk__in=ids).delete()
     return redirect('moderaciones_listar')
+
+
+def comprobar_mensaje(solicitud, mensaje):
+    nombre = solicitud.usuario.nombreUsuario
+    if nombre not in (mensaje.emisor['nombreUsuario'], mensaje.receptor['nombreUsuario']) or nombre in mensaje.eliminadoPor:
+        raise PermissionDenied('No puedes consultar este mensaje.')
+
+
+def comprobar_grupo(solicitud, grupo):
+    if grupo.tipo == 'privado' and not any(dato['nombreUsuario'] == solicitud.usuario.nombreUsuario for dato in grupo.miembros) and solicitud.usuario.rol != 'administrador':
+        raise PermissionDenied('Este grupo es privado.')
+
+
+@sesion_requerida
+@require_http_methods(['GET', 'POST'])
+def mensaje_actualizar(solicitud, pk):
+    mensaje = get_object_or_404(Mensaje, pk=pk)
+    comprobar_mensaje(solicitud, mensaje)
+    if mensaje.emisor['nombreUsuario'] != solicitud.usuario.nombreUsuario or mensaje.leido:
+        raise PermissionDenied('Solo puedes editar tus mensajes antes de que sean leídos.')
+    from django import forms
+    class FormularioContenido(forms.Form):
+        contenido = forms.CharField(max_length=5000, widget=forms.Textarea)
+    formulario = FormularioContenido(solicitud.POST or None, initial={'contenido': mensaje.contenido})
+    if solicitud.method == 'POST' and formulario.is_valid():
+        mensaje.contenido = formulario.cleaned_data['contenido']
+        mensaje.save()
+        return redirect('mensaje_detalle', pk=pk)
+    return render(solicitud, 'comunes/formulario.html', {'titulo': 'Editar mensaje', 'formulario': formulario})

@@ -1,3 +1,4 @@
+from photobook.campos import FechaDocumento
 from django.core.validators import  MinLengthValidator
 from django.utils import timezone
 from djongo import models
@@ -13,7 +14,7 @@ class Privacidad(models.Model):
 class Seguido(models.Model):
 
     usuario = models.CharField(max_length=30)
-    inicioSeg = models.DateTimeField()
+    inicioSeg = FechaDocumento()
 
     class Meta:
         abstract = True
@@ -21,20 +22,21 @@ class Seguido(models.Model):
 class Seguidor(models.Model):
 
     usuario = models.CharField(max_length=30)
-    inicioSeg = models.DateTimeField()
+    inicioSeg = FechaDocumento()
 
     class Meta:
         abstract = True
 
 class Usuario(models.Model):
+    _id = models.ObjectIdField()
+    activo = models.BooleanField(default=True)
 
-    nombreUsuario = models.CharField(max_length=30, validators=[MinLengthValidator(3)])
+    nombreUsuario = models.CharField(max_length=30, unique=True, validators=[MinLengthValidator(3)])
     correo = models.EmailField(max_length=120,unique=True)
     contrasena = models.CharField(max_length=255)
     imagenPerfil = models.URLField(max_length=500,blank=True,null=True)
     biografia = models.CharField(max_length=255,blank=True,null=True)
-    rol = models.CharField(max_length=20,choices=[
-        ("artista","Artista"),("administrador","Administrador")])
+    rol = models.CharField(max_length=50, default="artista")
 
 
     privacidad = models.EmbeddedField( model_container=Privacidad, default=dict)
@@ -46,15 +48,16 @@ class Usuario(models.Model):
 
     class Meta:
         db_table = "usuarios"
+        managed = False
 
     def __str__(self):
-        return str(self.nombreUsuario)
+        return self.nombreUsuario
 
 class Notificacion(models.Model):
     _id = models.ObjectIdField()
 
-    usuarioNotificado = models.CharField(max_length=24)
-    usuarioOrigen = models.CharField(max_length=24,blank=True,null=True)
+    usuarioNotificado = models.CharField(max_length=30)
+    usuarioOrigen = models.CharField(max_length=30,blank=True,null=True)
 
     tipo = models.CharField(
         max_length=15,

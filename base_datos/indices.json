@@ -1,0 +1,45 @@
+{
+  "usuarios": [
+    [
+      "nombreUsuario"
+    ],
+    [
+      "correo"
+    ]
+  ],
+  "publicaciones": [
+    [
+      "archivoUrl"
+    ]
+  ],
+  "categorias": [
+    [
+      "nombre"
+    ],
+    [
+      "slug"
+    ]
+  ],
+  "grupos": [
+    [
+      "nombre"
+    ]
+  ],
+  "roles": [
+    [
+      "nombre"
+    ]
+  ],
+  "exploracion": [
+    [
+      "usuario.nombreUsuario"
+    ]
+  ],
+  "recomendaciones": [
+    [
+      "usuario.nombreUsuario",
+      "publicacion.archivoUrl",
+      "criterio"
+    ]
+  ]
+}

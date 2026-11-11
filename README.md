@@ -1,686 +1,110 @@
-# PhotoBook
+# Photobook
 
-Proyecto web desarrollado con **Django 6.1.1**, preparado para trabajar con **MongoDB mediante PyMongo**.
+Proyecto de fotografía con cinco aplicaciones Django y almacenamiento documental en MongoDB.
 
-## 1. Requisitos previos
+## Preparación en Windows
 
-Antes de clonar y ejecutar el proyecto, cada colaborador debe tener instalado:
-
-- Git
-- Python compatible con Django 6.1.1
-- MongoDB
-- Un editor de código, recomendado: Visual Studio Code
-- PowerShell, CMD o una terminal equivalente
-
-Verificar Python:
+Usa Python 3.10 y un servidor MongoDB en ejecución. Abre PowerShell en la carpeta que contiene `manage.py`.
 
 ```powershell
-python --version
-```
-
-Verificar Git:
-
-```powershell
-git --version
-```
-
-Verificar MongoDB según la instalación disponible en el equipo.
-
----
-
-## 2. Clonar el repositorio
-
-Clonar el proyecto:
-
-```powershell
-git clone https://github.com/Johanbeltranramirez/photobook_project.git
-```
-
-Entrar al proyecto:
-
-```powershell
-cd photobook_project
-```
-
-> Reemplazar `<URL_DEL_REPOSITORIO>` por la URL real del repositorio Git.
-
----
-
-## 3. Crear el entorno virtual
-
-En Windows / PowerShell:
-
-```powershell
-python -m venv env
-```
-
-Activar el entorno:
-
-```powershell
-.\env\Scripts\Activate.ps1
-```
-
-La terminal debe mostrar algo similar a:
-
-```text
-(env) PS C:\...\photobook_project>
-```
-
-Si PowerShell impide la ejecución de scripts, puede ser necesario ajustar temporalmente la política de ejecución del usuario:
-
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
-
-Después volver a activar:
-
-```powershell
-.\env\Scripts\Activate.ps1
-```
-
----
-
-## 4. Instalar las dependencias
-
-Con el entorno virtual activo:
-
-```powershell
-python -m pip install --upgrade pip
-```
-
-Instalar las dependencias del proyecto:
-
-```powershell
-pip install -r requirements.txt
-```
-
-Si el archivo `requirements.txt` todavía no existe, instalar inicialmente:
-
-```powershell
-pip install django==6.1.1 pymongo djangorestframework python-dotenv
-```
-
-Y generar el archivo:
-
-```powershell
-pip freeze > requirements.txt
-```
-
-### Dependencias principales
-
-| Paquete | Uso |
-|---|---|
-| Django 6.1.1 | Framework principal |
-| PyMongo | Conexión directa con MongoDB |
-| Django REST Framework | Desarrollo de APIs REST |
-| python-dotenv | Lectura de variables desde `.env` |
-
-> **Importante:** este proyecto no utiliza `Djongo`. No instalar `djongo`, ya que la versión utilizada anteriormente presenta incompatibilidades con Django 6.1.1.
-
----
-
-## 5. Configuración de MongoDB
-
-El proyecto utiliza MongoDB mediante PyMongo.
-
-Crear un archivo llamado:
-
-```text
-.env
-```
-
-en la raíz del proyecto:
-
-```text
-photobook_project/
-├── .env
-├── manage.py
-├── requirements.txt
-├── photobook/
-└── g_usuarios_perfiles/
-...
-```
-
-Contenido inicial:
-
-```env
-MONGO_URI=mongodb://localhost:27017/
-MONGO_DB=photobook
-```
-
-Si MongoDB utiliza autenticación, **no colocar las credenciales directamente en el código fuente**. Utilizar variables de entorno.
-
-Ejemplo:
-
-```env
-MONGO_URI=mongodb://usuario:contraseña@localhost:27017/
-MONGO_DB=photobook
-```
-
-### Seguridad
-
-El archivo `.env` debe estar incluido en `.gitignore`:
-
-```gitignore
-.env
-env/
-__pycache__/
-*.pyc
-```
-
-**Nunca subir contraseñas, tokens, claves o credenciales al repositorio.**
-
----
-
-## 6. Verificar MongoDB
-
-Antes de ejecutar el proyecto, MongoDB debe estar disponible.
-
-La configuración local esperada inicialmente es:
-
-```text
-mongodb://localhost:27017/
-```
-
-Base de datos:
-
-```text
-photobook
-```
-
-MongoDB crea la base de datos cuando se realiza la primera operación que genera datos, por lo que no necesariamente debe existir previamente.
-
----
-
-## 7. Configuración de Django
-
-El proyecto Django se denomina:
-
-```text
-photobook
-```
-
-La estructura principal es:
-
-```text
-photobook_project/
-│
-├── env/
-│
-├── photobook/
-│   ├── __init__.py
-│   ├── settings.py
-│   ├── urls.py
-│   ├── asgi.py
-│   └── wsgi.py
-│
-├── photos/
-│   ├── migrations/
-│   ├── __init__.py
-│   ├── admin.py
-│   ├── apps.py
-│   ├── models.py
-│   ├── tests.py
-│   ├── views.py
-│   └── mongodb.py
-│
-├── .env
-├── .gitignore
-├── manage.py
-└── requirements.txt
-```
-
-Las aplicaciones actualmente utilizadas incluyen:
-
-```python
-'rest_framework',
-'photos',
-```
-
-en `INSTALLED_APPS`.
-
----
-
-## 8. Migraciones de Django
-
-Después de clonar el proyecto y configurar el entorno:
-
-```powershell
-python manage.py migrate
-```
-
-Esto crea las estructuras necesarias para los componentes de Django que utilizan base de datos relacional, como autenticación, sesiones y administración.
-
-> MongoDB se maneja mediante PyMongo y no mediante `Djongo`.
-
----
-
-## 9. Crear un superusuario
-
-El proyecto requiere un usuario administrador de Django para acceder al panel administrativo.
-
-Crear uno con:
-
-```powershell
-python manage.py createsuperuser
-```
-
-El usuario administrador configurado originalmente durante el desarrollo es:
-
-```text
-Username: johanrb
-Email: johan.ramirez.beltran@gmail.com
-```
-
-### Seguridad de credenciales
-
-**La contraseña del superusuario no se documenta en este README ni debe almacenarse en Git.**
-
-Si un colaborador necesita acceso administrativo, debe crear su propio superusuario:
-
-```powershell
-python manage.py createsuperuser
-```
-
-Esto evita compartir credenciales personales entre integrantes del equipo.
-
----
-
-## 10. Ejecutar el proyecto
-
-Con el entorno virtual activo:
-
-```powershell
+py -3.10 -m venv venv310
+.\venv310\Scripts\Activate
+python -m pip install -r requirements.txt
+python manage.py check
+python manage.py preparar_base
+python manage.py crear_administrador
+python manage.py cargar_ejemplos
 python manage.py runserver
 ```
 
-Por defecto estará disponible en:
+Abre http://127.0.0.1:8000/. El comando `crear_administrador` solicita el nombre, correo y contraseña de la cuenta administradora. `cargar_ejemplos` es opcional y solicita una contraseña para las cuentas nuevas `ana_demo`, `luis_demo`, `maria_demo` y `carlos_demo`. Las cuentas que ya existían conservan su contraseña.
 
-```text
-http://127.0.0.1:8000/
-```
+En Linux puedes crear el entorno con `python3.10 -m venv venv310` y activarlo con `source venv310/bin/activate`.
 
-También puede utilizarse:
+## Conexión
 
-```text
-http://localhost:8000/
-```
-
-Para acceder al administrador:
-
-```text
-http://127.0.0.1:8000/admin/
-```
-
----
-
-## 11. Verificación de instalación
-
-Antes de comenzar a desarrollar, ejecutar:
+La configuración predeterminada utiliza `mongodb://127.0.0.1:27017/` y la base `photobook_db`. Para usar otra conexión, define las variables antes de ejecutar los comandos:
 
 ```powershell
-python manage.py check
+$env:PHOTOBOOK_MONGO = "mongodb://127.0.0.1:27017/"
+$env:PHOTOBOOK_BASE = "photobook_db"
 ```
 
-Una instalación correcta debe finalizar sin errores.
+La conexión y las credenciales se configuran en el equipo; no se incluyen credenciales de una base externa en el proyecto. La clave local se genera al iniciar Django y las sesiones se guardan en la carpeta `sesiones`.
 
-También se recomienda comprobar Django:
+El proyecto conserva Django 3.1.12 y Djongo 1.3.7 para seguir la estructura recibida. La configuración incluida corresponde a la ejecución local del proyecto académico.
+
+## Colecciones
+
+`python manage.py preparar_base` aplica los esquemas de `base_datos/esquemas.json` y los índices de `base_datos/indices.json`. También se incluye `base_datos/crear_colecciones.js` para ejecutar la creación desde mongosh. Son dos formas de preparar la misma estructura: basta con usar una.
+
+El comando primero revisa los documentos y las claves que deben ser únicas. Si encuentra datos incompatibles o duplicados, se detiene antes de aplicar los esquemas. No borra ni transforma los datos anteriores. No ejecutes además el archivo original de colecciones: contiene definiciones repetidas y estructuras que ya se consolidaron.
+
+Las colecciones definitivas son:
+
+| Aplicación | Colecciones |
+| --- | --- |
+| Usuarios y perfiles | usuarios, notificaciones |
+| Publicación y organización | publicaciones, colecciones, categorias, recomendaciones |
+| Interacción social | mensajes, grupos, moderacion |
+| Exploración e inspiración | exploracion |
+| Administración | roles, accionesAdministrativas, reporteContenido, controlSistema |
+
+Los comentarios y las reacciones se guardan dentro de las publicaciones o los mensajes correspondientes. Los foros y sus comentarios están dentro de los grupos. Los seguidores están dentro del usuario. No se crean colecciones separadas con esos mismos datos ni relaciones `ForeignKey`.
+
+No se requiere `migrate` para los modelos del proyecto: las colecciones y sus restricciones se preparan con el comando anterior. La administración es el módulo propio del grupo; no se utiliza el panel automático de Django.
+
+## Recorrido para comprobar la integración
+
+1. Crea la base y el administrador. Carga los ejemplos si deseas recorrer pantallas con datos.
+2. Ingresa como administrador. Revisa categorías, roles y control del sistema.
+3. Cierra sesión e ingresa como `ana_demo`, o registra una cuenta nueva. Crea una publicación usando una categoría existente.
+4. Crea una colección y agrega esa publicación. Si es colaborativa, agrega un usuario ya registrado.
+5. Ingresa como `luis_demo`. Configura categorías, etiquetas y artistas en Exploración. Actualiza las recomendaciones.
+6. Envía un mensaje, entra a un grupo y escribe en su foro. Comprueba las notificaciones.
+7. Crea un reporte. Ingresa como administrador y atiende el mismo reporte desde Administración.
+8. Edita y elimina registros desde sus pantallas. Las operaciones de eliminación muestran confirmación y se ejecutan mediante POST; las acciones de comentarios y foros tienen botones específicos.
+
+Las imágenes y los videos se proporcionan mediante un enlace, tal como estaba definido en los modelos originales. La carga incluye ocho fotografías guardadas en `estaticos/ejemplos`; sus enlaces apuntan al mismo servidor local de Django. No necesitan conexión a Internet para verse durante la presentación. Los autores y las fuentes están en `base_datos/FUENTES_IMAGENES.txt`.
+
+La carga agrega ocho publicaciones, cinco categorías, cuatro colecciones, tres grupos, ocho mensajes y ocho notificaciones. También incluye comentarios, reacciones, preferencias, recomendaciones, reportes y registros administrativos. Puede repetirse sin duplicar los ejemplos ni reemplazar las contraseñas, publicaciones o preferencias existentes. Si ya cargaste la ilustración de la versión anterior, se conserva y se agregan las ocho fotografías.
+
+Si vas a usar otro puerto, indícalo en la primera carga: `python manage.py cargar_ejemplos --direccion http://127.0.0.1:8001`, y después ejecuta `python manage.py runserver 8001`. Este parámetro se aplica a los enlaces nuevos; no cambia los que ya están guardados. Consulta `CARGAR_DATOS.txt` para el procedimiento completo.
+
+## Reglas de funcionamiento
+
+- El usuario se registra una sola vez. Las vistas toman su identidad de la sesión, y los destinatarios o colaboradores se eligen entre usuarios existentes.
+- El nombre de usuario no cambia al editar el perfil. Así se conserva la identidad dentro de los documentos embebidos.
+- La contraseña se guarda mediante las funciones de Django para contraseñas, nunca como texto plano.
+- Desactivar una cuenta impide iniciar sesión y conserva la autoría de su contenido. No se permite desactivar al último administrador.
+- Las copias embebidas conservan el nombre de usuario y la imagen disponibles cuando se creó el documento. Cambiar la imagen del perfil no reescribe el historial completo.
+- Un usuario accede a sus propios mensajes y reportes. Solo los participantes ven una conversación. Las colecciones privadas requieren ser propietario o colaborador.
+- Los bloqueos se aplican según su ámbito y expiración. Un bloqueo de mensajes no oculta por sí solo las publicaciones.
+- Las recomendaciones automáticas se generan por coincidencias de categorías, etiquetas y artistas. Cada criterio aporta un tercio de la puntuación. Se conservan hasta veinte coincidencias, ordenadas por puntuación y después por fecha. Se actualizan al guardar las preferencias o pulsar el botón correspondiente.
+- Los reportes se guardan únicamente en `reporteContenido`. Al atenderlos, se registra la decisión y una acción administrativa. Escribir una acción no elimina automáticamente publicaciones ni desactiva usuarios: esas operaciones se realizan en sus pantallas correspondientes.
+- `moderacion` guarda exclusivamente bloqueos.
+- Control del sistema toma los conteos actuales al crear un registro. La fecha y el estado de un respaldo se registran manualmente; el módulo no ejecuta copias de seguridad.
+- Los nombres de las funciones propias y los textos están en español. Se conservan nombres exigidos por Django, MongoDB, HTML y CSS, además de términos técnicos como URL y slug.
+
+## Archivos principales
+
+- `models.py`: estructura de cada documento y de sus objetos embebidos.
+- `forms.py`: campos y validaciones de los formularios.
+- `views.py`: consulta, creación, edición y eliminación de registros.
+- `urls.py`: conexión de las rutas con sus vistas.
+- `plantillas/base.html`: estructura visual compartida.
+- `plantillas/comunes`: cabecera, menú, pie, formularios y tarjetas reutilizables.
+- `estaticos/estilos.css`: estilos compartidos. Los colores #FFA97B y #FFECCB se usan en componentes; el fondo de página es blanco.
+- `base_datos`: esquemas, índices y script de creación.
+
+Consulta `SUSTENTACION.txt` para explicar el funcionamiento y `VALIDACION.txt` para conocer qué se comprobó y qué falta verificar en el equipo de ejecución.
+
+## Comprobaciones aisladas
 
 ```powershell
-python -m django --version
+python -m pip install -r requirements_pruebas.txt
+python pruebas/verificar_integracion.py
+python pruebas/verificar_carga.py
 ```
 
-La versión esperada es:
-
-```text
-6.1.1
-```
-
----
-
-## 12. Flujo recomendado para nuevos colaboradores
-
-Cada vez que un colaborador descargue el proyecto:
-
-```powershell
-git clone <URL_DEL_REPOSITORIO>
-cd photobook_project
-
-python -m venv env
-.\env\Scripts\Activate.ps1
-
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-
-# Crear/configurar .env
-
-python manage.py migrate
-python manage.py check
-python manage.py runserver
-```
-
-Si necesita acceso al administrador:
-
-```powershell
-python manage.py createsuperuser
-```
-
----
-
-## 13. Flujo de trabajo con Git
-
-Antes de comenzar a trabajar:
-
-```powershell
-git pull
-```
-
-Consultar el estado:
-
-```powershell
-git status
-```
-
-Crear una rama para una funcionalidad:
-
-```powershell
-git checkout -b feature/nombre-funcionalidad
-```
-
-Agregar cambios:
-
-```powershell
-git add .
-```
-
-Crear commit:
-
-```powershell
-git commit -m "feat: descripcion del cambio"
-```
-
-Subir la rama:
-
-```powershell
-git push -u origin feature/nombre-funcionalidad
-```
-
-Después, crear un Pull Request/Merge Request según la plataforma utilizada por el equipo.
-
----
-
-## 14. Archivos que NO deben subirse al repositorio
-
-El repositorio no debe contener:
-
-```text
-env/
-.env
-__pycache__/
-*.pyc
-db.sqlite3
-```
-
-Especialmente:
-
-```text
-.env
-```
-
-porque puede contener credenciales de MongoDB u otros secretos.
-
----
-
-## 15. Buenas prácticas
-
-### Entorno virtual
-
-Cada desarrollador debe utilizar su propio entorno virtual:
-
-```text
-env/
-```
-
-El entorno no se comparte mediante Git.
-
-### Dependencias
-
-Cuando se agregue o actualice una dependencia:
-
-```powershell
-pip install nombre-paquete
-pip freeze > requirements.txt
-```
-
-Luego debe incluirse el cambio de `requirements.txt` en el commit.
-
-### Variables de entorno
-
-No escribir secretos directamente en:
-
-- `settings.py`
-- `views.py`
-- `mongodb.py`
-- archivos JavaScript
-- archivos JSON versionados
-- README
-- commits de Git
-
-### Credenciales
-
-Cada desarrollador debe utilizar sus propias credenciales para cuentas administrativas o servicios externos.
-
----
-
-## 16. Comandos útiles
-
-### Activar entorno virtual
-
-```powershell
-.\env\Scripts\Activate.ps1
-```
-
-### Desactivar entorno virtual
-
-```powershell
-deactivate
-```
-
-### Ver paquetes instalados
-
-```powershell
-pip list
-```
-
-### Actualizar requirements.txt
-
-```powershell
-pip freeze > requirements.txt
-```
-
-### Comprobar Django
-
-```powershell
-python manage.py check
-```
-
-### Crear migraciones
-
-```powershell
-python manage.py makemigrations
-```
-
-### Aplicar migraciones
-
-```powershell
-python manage.py migrate
-```
-
-### Crear aplicación Django
-
-```powershell
-python manage.py startapp nombre_app
-```
-
-### Ejecutar servidor
-
-```powershell
-python manage.py runserver
-```
-
----
-
-## 17. Problemas frecuentes
-
-### Error: `No module named django`
-
-Verificar que el entorno virtual esté activo:
-
-```powershell
-.\env\Scripts\Activate.ps1
-```
-
-Luego:
-
-```powershell
-pip install -r requirements.txt
-```
-
-### Error relacionado con `Djongo`
-
-No instalar:
-
-```powershell
-pip install djongo
-```
-
-El proyecto utiliza PyMongo directamente.
-
-### Error de conexión con MongoDB
-
-Verificar:
-
-1. Que MongoDB esté ejecutándose.
-2. Que `MONGO_URI` sea correcto.
-3. Que el puerto utilizado sea el esperado.
-4. Que el nombre de la base de datos sea correcto.
-5. Que las credenciales, si existen, sean válidas.
-
-Configuración local inicial:
-
-```env
-MONGO_URI=mongodb://localhost:27017/
-MONGO_DB=photobook
-```
-
-### El archivo `.env` no existe
-
-Crear uno en la raíz del proyecto:
-
-```powershell
-New-Item .env -ItemType File
-```
-
-Agregar:
-
-```env
-MONGO_URI=mongodb://localhost:27017/
-MONGO_DB=photobook
-```
-
----
-
-## 18. Arquitectura actual
-
-La integración con MongoDB utiliza la siguiente estructura:
-
-```text
-                 ┌───────────────────┐
-                 │      Cliente      │
-                 │ Browser / Frontend│
-                 └─────────┬─────────┘
-                           │
-                           ▼
-                 ┌───────────────────┐
-                 │      Django       │
-                 │    Photobook      │
-                 └─────────┬─────────┘
-                           │
-                 ┌─────────▼─────────┐
-                 │      PyMongo      │
-                 └─────────┬─────────┘
-                           │
-                           ▼
-                 ┌───────────────────┐
-                 │      MongoDB      │
-                 │     photobook     │
-                 └───────────────────┘
-```
-
-Django continúa utilizando sus mecanismos propios para funcionalidades como autenticación, administración y sesiones, mientras que las operaciones sobre MongoDB se realizan mediante PyMongo.
-
----
-
-## 19. Estado inicial del proyecto
-
-Tecnologías principales:
-
-- Python
-- Django 6.1.1
-- PyMongo
-- MongoDB
-- Django REST Framework
-- python-dotenv
-- Git / GitHub
-
-Proyecto:
-
-```text
-photobook
-```
-
-Aplicación:
-
-```text
-photos
-```
-
-Base de datos MongoDB:
-
-```text
-photobookdb
-```
-
-MongoDB local:
-
-```text
-localhost:27017
-```
-
-Usuario administrador inicial:
-
-```text
-johanrb
-```
-
-Correo administrativo:
-
-```text
-johan.ramirez.beltran@gmail.com
-```
-
-> La contraseña del usuario administrador no forma parte de este archivo por razones de seguridad. Los colaboradores deben crear sus propias credenciales mediante `createsuperuser`.
-
----
-
-## 20. Contacto y colaboración
-
-Para contribuir al proyecto:
-
-1. Crear una rama específica para el cambio.
-2. Mantener actualizada la rama respecto al repositorio principal.
-3. No subir credenciales ni archivos sensibles.
-4. Mantener actualizado `requirements.txt` cuando cambien las dependencias.
-5. Ejecutar `python manage.py check` antes de realizar un commit.
-6. Probar localmente los cambios antes de abrir un Pull Request.
-7. Describir claramente los cambios realizados en el commit y Pull Request.
+Estas comprobaciones usan MongoDB simulado y guardan el resultado en `pruebas/resultado.json`. No se conectan a la base del usuario. No reemplazan la prueba final con MongoDB real.

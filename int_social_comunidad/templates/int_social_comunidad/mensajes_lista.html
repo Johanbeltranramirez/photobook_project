@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block contenido %}
+<header class="encabezado_pagina">
+  <h1>Mensajes</h1>
+  <div class="acciones">
+    <a class="boton" href="{% url 'mensaje_crear' %}">Enviar mensaje</a>
+    <a class="boton secundario" href="{% url 'mensajes_no_leidos' %}">No leídos</a>
+  </div>
+</header>
+
+<ul class="lista_postales">
+  {% for mensaje in datos.mensajes %}
+  <li>
+    <a class="postal{% if not mensaje.leido %} sin_leer{% endif %}" href="{% url 'mensaje_detalle' mensaje.pk %}">
+      <span class="solo_lectores">Mensaje de {{ mensaje.emisor.nombreUsuario }} para {{ mensaje.receptor.nombreUsuario }}</span>
+      <div class="postal_texto">
+        <p class="postal_fecha">{{ mensaje.fechaEnvio|date:'d/m/Y H:i' }}</p>
+        <p class="postal_contenido">{{ mensaje.contenido|truncatechars:160 }}</p>
+        <span class="etiqueta">{% if mensaje.leido %}Leído{% else %}Sin leer{% endif %}</span>
+      </div>
+      <div class="postal_direccion" aria-hidden="true">
+        <span class="postal_sello">{{ mensaje.emisor.nombreUsuario|slice:":2"|capfirst }}</span>
+        <div>
+          <p class="postal_rotulo">Para</p>
+          <p class="postal_nombre">{{ mensaje.receptor.nombreUsuario }}</p>
+          <span class="postal_linea"></span>
+          <p class="postal_rotulo">De</p>
+          <p class="postal_de">{{ mensaje.emisor.nombreUsuario }}</p>
+        </div>
+      </div>
+    </a>
+  </li>
+  {% empty %}
+  <li class="vacio">
+    <p>No hay mensajes para mostrar.</p>
+    <a class="boton" href="{% url 'mensaje_crear' %}">Enviar mensaje</a>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}

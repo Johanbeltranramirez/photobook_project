@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block contenido %}
+
+<div class="encabezado_pagina">
+  <div>
+    <p class="sobre_titulo">{{ datos.accion|upper }}</p>
+    <h1>{{ datos.accion|capfirst }} categoría</h1>
+  </div>
+</div>
+
+<div class="formulario_doble">
+  <form method="post" class="formulario">{% csrf_token %}
+    {% include 'comunes/campos.html' with formulario=datos.formulario %}
+    <button type="submit">Guardar</button>
+    <button type="button" class="secundario" onclick="history.back()">Cancelar</button>
+  </form>
+
+  <aside class="vista_previa" aria-label="Vista previa de la categoría">
+    <p class="vista_titulo">VISTA PREVIA</p>
+    <div class="mosaico tono1">
+      <span class="mosaico_inicial" id="prev_inicial" aria-hidden="true">··</span>
+      <span class="mosaico_pie">
+        <h2 id="prev_nombre">Nombre de la categoría</h2>
+        <span class="mosaico_total" id="prev_desc">Aquí aparecerá la descripción.</span>
+      </span>
+    </div>
+  </aside>
+</div>
+
+<script>
+(function () {
+  var nombre = document.getElementById('id_nombre');
+  var desc = document.getElementById('id_descripcion');
+  var ini = document.getElementById('prev_inicial');
+  var tit = document.getElementById('prev_nombre');
+  var txt = document.getElementById('prev_desc');
+  if (!nombre) return;
+
+  function pintar() {
+    var n = nombre.value.trim();
+    ini.textContent = n ? n.charAt(0).toUpperCase() + n.slice(1, 2).toLowerCase() : '··';
+    tit.textContent = n || 'Nombre de la categoría';
+    txt.textContent = (desc && desc.value.trim()) || 'Aquí aparecerá la descripción.';
+  }
+
+  nombre.addEventListener('input', pintar);
+  if (desc) desc.addEventListener('input', pintar);
+  pintar();
+})();
+</script>
+
+{% endblock %}

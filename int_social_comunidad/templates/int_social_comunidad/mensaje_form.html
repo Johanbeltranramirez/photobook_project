@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block contenido %}
+
+<header class="encabezado_pagina">
+  <h1>{{ datos.accion|capfirst }} mensaje</h1>
+</header>
+
+<div class="formulario_doble">
+  <form method="post" class="formulario" id="formulario_mensaje">{% csrf_token %}
+    {% include 'comunes/campos.html' with formulario=datos.formulario %}
+    <div class="acciones">
+      <button>{% if datos.accion == 'crear' %}Enviar mensaje{% else %}Guardar cambios{% endif %}</button>
+      <a class="boton secundario" href="{% url 'mensajes_no_leidos' %}" data-volver>Cancelar</a>
+    </div>
+  </form>
+
+  <aside class="vista_previa" aria-hidden="true">
+    <p class="vista_titulo">VISTA PREVIA</p>
+    <div class="previa_chat">
+      <p class="chat_dia">Hoy</p>
+      <div class="chat_fila enviado">
+        <span class="chat_avatar">{{ usuario_actual.nombreUsuario|slice:":2"|capfirst }}</span>
+        <div class="chat_mensaje">
+          <p class="chat_autor">{{ usuario_actual.nombreUsuario }} para <span data-previa-para>…</span></p>
+          <p class="chat_burbuja vacia" data-previa-texto>Escribe tu mensaje</p>
+          <div class="chat_pie">
+            <span class="chat_contador" data-previa-adjuntos hidden></span>
+            <p>Ahora · Sin leer</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <small>Así se verá tu mensaje.</small>
+  </aside>
+</div>
+
+<script>
+(function () {
+  var form = document.getElementById('formulario_mensaje');
+  if (!form) return;
+
+  var contenido = form.querySelector('[name="contenido"]');
+  var receptor = form.querySelector('[name="receptor"]');
+  var adjuntos = form.querySelector('[name="adjuntos"]');
+  var textoPrevia = document.querySelector('[data-previa-texto]');
+  var paraPrevia = document.querySelector('[data-previa-para]');
+  var adjuntosPrevia = document.querySelector('[data-previa-adjuntos]');
+
+  /* Adjuntos plegados: el campo se mueve dentro de un <details> */
+  if (adjuntos) {
+    var campo = adjuntos.closest('.campo') || adjuntos.parentNode;
+    var detalles = document.createElement('details');
+    var resumen = document.createElement('summary');
+    detalles.className = 'adjuntos_plegable';
+    resumen.textContent = 'Agregar enlaces adjuntos';
+    campo.parentNode.insertBefore(detalles, campo);
+    detalles.appendChild(resumen);
+    detalles.appendChild(campo);
+    if (adjuntos.value.trim() || campo.querySelector('.errorlist')) detalles.open = true;
+  }
+
+  /* Vista previa: se actualiza al escribir */
+  function actualizar() {
+    var valor = contenido ? contenido.value.trim() : '';
+    textoPrevia.textContent = valor || 'Escribe tu mensaje';
+    textoPrevia.classList.toggle('vacia', !valor);
+
+    if (receptor && receptor.selectedIndex >= 0) {
+      var opcion = receptor.options[receptor.selectedIndex];
+      paraPrevia.textContent = opcion && opcion.value ? opcion.text : '…';
+    }
+
+    var total = adjuntos
+      ? adjuntos.value.split(',').map(function (e) { return e.trim(); }).filter(Boolean).length
+      : 0;
+    adjuntosPrevia.hidden = total === 0;
+    adjuntosPrevia.textContent = total + (total === 1 ? ' adjunto' : ' adjuntos');
+  }
+
+  [contenido, receptor, adjuntos].forEach(function (el) {
+    if (el) {
+      el.addEventListener('input', actualizar);
+      el.addEventListener('change', actualizar);
+    }
+  });
+  actualizar();
+
+  /* Cancelar vuelve a la página anterior si existe */
+  var volver = document.querySelector('[data-volver]');
+  if (volver) {
+    volver.addEventListener('click', function (e) {
+      if (history.length > 1) { e.preventDefault(); history.back(); }
+    });
+  }
+})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h1>{{ titulo }}</h1>
+<form method="post">
+    {% csrf_token %}
+    {{ formulario.as_p }}
+    <button type="submit">Guardar</button>
+    <a class="boton secundario" href="{% url 'reportes_listar' %}">Volver</a>
+</form>
+{% endblock %}

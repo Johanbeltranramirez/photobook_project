@@ -1,7 +1,7 @@
+from photobook.campos import FechaDocumento
 from django.core.validators import MinLengthValidator
 from django.utils import timezone
 from djongo import models
-
 
 
 class UsuarioEmbebido(models.Model):
@@ -23,7 +23,7 @@ class CategoriaResumen(models.Model):
 class ReaccionEmbebida(models.Model):
     usuario = models.EmbeddedField(model_container=UsuarioEmbebido)
     tipoReaccion = models.CharField(max_length=10)
-    fecha = models.DateTimeField(default=timezone.now)
+    fecha = FechaDocumento(default=timezone.now)
 
     class Meta:
         abstract = True
@@ -32,15 +32,15 @@ class ReaccionEmbebida(models.Model):
 class MiembroGrupo(models.Model):
     nombreUsuario = models.CharField(max_length=30, validators=[MinLengthValidator(3)])
     imagenPerfil = models.URLField(max_length=500, blank=True, null=True)
-    rol = models.CharField(max_length=10, default="miembro")
-    fechaIngreso = models.DateTimeField(default=timezone.now)
+    rol = models.CharField(max_length=15, default="miembro")
+    fechaIngreso = FechaDocumento(default=timezone.now)
 
     class Meta:
         abstract = True
 
 
 class ConteoReacciones(models.Model):
-    like = models.PositiveIntegerField(default=0)
+    meGusta = models.PositiveIntegerField(default=0)
     amor = models.PositiveIntegerField(default=0)
     aplauso = models.PositiveIntegerField(default=0)
     sorpresa = models.PositiveIntegerField(default=0)
@@ -54,7 +54,7 @@ class ConteoReacciones(models.Model):
 class RespuestaComentario(models.Model):
     autor = models.EmbeddedField(model_container=UsuarioEmbebido)
     contenido = models.CharField(max_length=1000)
-    fechaCreacion = models.DateTimeField(default=timezone.now)
+    fechaCreacion = FechaDocumento(default=timezone.now)
 
     class Meta:
         abstract = True
@@ -73,8 +73,8 @@ class ComentarioEmbebido(models.Model):
     fijado = models.BooleanField(default=False)
     cerrado = models.BooleanField(default=False)
     estado = models.CharField(max_length=10, default="activo")
-    fechaCreacion = models.DateTimeField(default=timezone.now)
-    fechaEdicion = models.DateTimeField(blank=True, null=True)
+    fechaCreacion = FechaDocumento(default=timezone.now)
+    fechaEdicion = FechaDocumento(blank=True, null=True)
 
     class Meta:
         abstract = True
@@ -84,15 +84,7 @@ class ForoGrupo(models.Model):
     nombre = models.CharField(max_length=80)
     descripcion = models.CharField(max_length=500, blank=True, null=True)
     comentarios = models.ArrayField(model_container=ComentarioEmbebido, default=list, blank=True)
-    fechaCreacion = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        abstract = True
-
-
-class ObjetivoReporte(models.Model):
-    publicacionUrl = models.URLField(max_length=500, blank=True, null=True)
-    nombreUsuario = models.CharField(max_length=30, blank=True, null=True)
+    fechaCreacion = FechaDocumento(default=timezone.now)
 
     class Meta:
         abstract = True
@@ -116,7 +108,7 @@ class Mensaje(models.Model):
         managed = False
 
     def __str__(self):
-        return f"{self.emisor.nombreUsuario} -> {self.receptor.nombreUsuario}"
+        return f"{self.emisor['nombreUsuario']} a {self.receptor['nombreUsuario']}"
 
 
 class Grupo(models.Model):
@@ -144,25 +136,11 @@ class Grupo(models.Model):
 
 class Moderacion(models.Model):
     _id = models.ObjectIdField()
-    tipo = models.CharField(max_length=10)
-
-    # Campos de reporte
-    reportante = models.EmbeddedField(model_container=UsuarioEmbebido, blank=True, null=True)
-    tipoElemento = models.CharField(max_length=12, blank=True, null=True)
-    objetivo = models.EmbeddedField(model_container=ObjetivoReporte, blank=True, null=True)
-    motivo = models.CharField(max_length=25, blank=True, null=True)
-    descripcion = models.TextField(max_length=1000, blank=True, null=True)
-    estado = models.CharField(max_length=12, blank=True, null=True)
-    moderador = models.EmbeddedField(model_container=UsuarioEmbebido, blank=True, null=True)
-    accionTomada = models.CharField(max_length=20, blank=True, null=True)
-    fechaResolucion = models.DateTimeField(blank=True, null=True)
-
-    # Campos de bloqueo
-    bloqueador = models.EmbeddedField(model_container=UsuarioEmbebido, blank=True, null=True)
-    bloqueado = models.EmbeddedField(model_container=UsuarioEmbebido, blank=True, null=True)
-    ambito = models.CharField(max_length=10, blank=True, null=True)
+    tipo = models.CharField(max_length=10, default="bloqueo")
+    bloqueador = models.EmbeddedField(model_container=UsuarioEmbebido)
+    bloqueado = models.EmbeddedField(model_container=UsuarioEmbebido)
+    ambito = models.CharField(max_length=10)
     fechaExpiracion = models.DateTimeField(blank=True, null=True)
-
     fechaCreacion = models.DateTimeField(default=timezone.now)
 
     class Meta:
@@ -170,4 +148,4 @@ class Moderacion(models.Model):
         managed = False
 
     def __str__(self):
-        return f"{self.tipo} ({self.estado or self.ambito})"
+        return f"Bloqueo ({self.ambito})"

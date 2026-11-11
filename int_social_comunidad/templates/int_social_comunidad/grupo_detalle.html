@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% block contenido %}
+{% with grupo=datos.grupo %}
+<div class="gd">
+
+  {# ===== Cabecera con estadísticas ===== #}
+  <header class="gd-hero">
+    <div class="gd-hero-top">
+      <div>
+        <h1>{{ grupo.nombre }}</h1>
+        <p class="gd-desc">{{ grupo.descripcion }}</p>
+        <div class="gd-tags">
+          <span class="gd-tag">{{ grupo.categoria.nombre }}</span>
+          <span class="gd-tag">{{ grupo.tipo|capfirst }}</span>
+        </div>
+      </div>
+
+      <div class="gd-acciones">
+        {% if datos.es_miembro %}
+          {% if usuario_actual.nombreUsuario != grupo.creador.nombreUsuario %}
+          <form method="post" action="{% url 'grupo_salir' grupo.pk %}">{% csrf_token %}
+            <button class="gd-btn gd-btn-blanco">Salir</button>
+          </form>
+          {% endif %}
+        {% elif grupo.tipo == 'publico' %}
+          <form method="post" action="{% url 'grupo_unirse' grupo.pk %}">{% csrf_token %}
+            <button class="gd-btn">Unirme</button>
+          </form>
+        {% endif %}
+        {% if usuario_actual.nombreUsuario == grupo.creador.nombreUsuario or permiso_usuarios %}
+          <a class="gd-btn gd-btn-blanco" href="{% url 'grupo_actualizar' grupo.pk %}">Editar</a>
+          <a class="gd-btn gd-btn-blanco" href="{% url 'grupo_eliminar' grupo.pk %}">Eliminar</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="gd-stats">
+      <div class="gd-stat"><strong>{{ grupo.totalMiembros }}</strong><span>miembros</span></div>
+      <div class="gd-stat"><strong>{{ grupo.foros|length }}</strong><span>foros</span></div>
+      <div class="gd-stat"><strong>{{ grupo.reglas|length }}</strong><span>reglas</span></div>
+    </div>
+  </header>
+
+  {# ===== Miembros ===== #}
+  <h2 class="gd-label">Miembros</h2>
+  <div class="gd-miembros">
+    {% for miembro in grupo.miembros %}
+    <span class="gd-chip">
+      <span class="gd-avatar">{{ miembro.nombreUsuario|slice:":2"|capfirst }}</span>
+      {{ miembro.nombreUsuario }}
+      {% if miembro.rol == 'administrador' %}<span class="gd-rol">Admin</span>
+      {% elif miembro.rol == 'moderador' %}<span class="gd-rol gd-rol-mod">Mod</span>{% endif %}
+    </span>
+    {% endfor %}
+  </div>
+
+  {# ===== Reglas ===== #}
+  <h2 class="gd-label">Reglas</h2>
+  <details class="gd-reglas">
+    <summary>Ver las {{ grupo.reglas|length }} reglas del grupo</summary>
+    {% for regla in grupo.reglas %}
+      <p>{{ regla }}</p>
+    {% empty %}
+      <p class="gd-vacio">El grupo todavía no tiene reglas registradas.</p>
+    {% endfor %}
+  </details>
+
+  {# ===== Foros ===== #}
+  <h2 class="gd-label">Foros</h2>
+  {% for foro in grupo.foros %}
+  {% with numero_foro=forloop.counter0 %}
+  <section class="gd-foro">
+    <div class="gd-foro-cab">
+      <h3>{{ foro.nombre }}</h3>
+      <span class="gd-badge">{{ foro.comentarios|length }} comentarios</span>
+    </div>
+    <p class="gd-foro-desc">{{ foro.descripcion }}</p>
+
+    <details class="gd-conversacion">
+      <summary>Ver conversación</summary>
+
+      {% for comentario in foro.comentarios %}
+      <article class="gd-comentario">
+        <span class="gd-avatar">{{ comentario.autor.nombreUsuario|slice:":2"|capfirst }}</span>
+        <div class="gd-comentario-cuerpo">
+          <p class="gd-autor">
+            <strong>{{ comentario.autor.nombreUsuario }}</strong>
+            {% if comentario.fijado %}<span class="gd-badge">Fijado</span>{% endif %}
+            {% if comentario.cerrado %}<span class="gd-badge">Cerrado</span>{% endif %}
+          </p>
+          <p>{{ comentario.contenido }}</p>
+
+          <div class="gd-comentario-acciones">
+            {% if datos.puede_moderar or usuario_actual.nombreUsuario == comentario.autor.nombreUsuario %}
+            <form method="post" action="{% url 'foro_comentario_eliminar' grupo.pk numero_foro forloop.counter0 %}">{% csrf_token %}
+              <button class="gd-btn gd-btn-sm gd-btn-blanco">Eliminar</button>
+            </form>
+            {% endif %}
+            {% if datos.puede_moderar %}
+            <form method="post" action="{% url 'foro_comentario_moderar' grupo.pk numero_foro forloop.counter0 %}">{% csrf_token %}
+              <button class="gd-btn gd-btn-sm gd-btn-blanco" name="accion" value="fijar">Fijar / desfijar</button>
+              <button class="gd-btn gd-btn-sm gd-btn-blanco" name="accion" value="cerrar">Cerrar / abrir</button>
+            </form>
+            {% endif %}
+          </div>
+
+          {% if usuario_actual.nombreUsuario == comentario.autor.nombreUsuario and not comentario.cerrado %}
+          <details class="gd-plegable">
+            <summary>Editar comentario</summary>
+            <form method="post" action="{% url 'foro_comentario_actualizar' grupo.pk numero_foro forloop.counter0 %}">{% csrf_token %}
+              <label>Contenido
+                <textarea name="contenido" maxlength="1000" required>{{ comentario.contenido }}</textarea>
+              </label>
+              <button class="gd-btn gd-btn-sm">Guardar</button>
+            </form>
+          </details>
+          {% endif %}
+        </div>
+      </article>
+      {% empty %}
+      <p class="gd-vacio">Aún no hay comentarios.{% if datos.es_miembro %} Sé el primero en escribir.{% endif %}</p>
+      {% endfor %}
+
+      {% if datos.es_miembro %}
+      <form class="gd-form" method="post" action="{% url 'foro_comentar' grupo.pk numero_foro %}">{% csrf_token %}
+        <label>Comentar
+          <textarea name="contenido" required maxlength="1000"></textarea>
+        </label>
+        <button class="gd-btn gd-btn-sm">Publicar comentario</button>
+      </form>
+      {% endif %}
+
+      {% if datos.puede_moderar %}
+      <form method="post" action="{% url 'foro_eliminar' grupo.pk numero_foro %}">{% csrf_token %}
+        <button class="gd-btn gd-btn-sm gd-btn-blanco">Eliminar foro</button>
+      </form>
+      {% endif %}
+    </details>
+  </section>
+  {% endwith %}
+  {% empty %}
+  <p class="gd-vacio">Este grupo todavía no tiene foros.</p>
+  {% endfor %}
+
+  {# ===== Administración ===== #}
+  {% if datos.puede_moderar %}
+  <h2 class="gd-label">Administrar</h2>
+  <div class="gd-admin">
+    <details class="gd-plegable" name="admin">
+      <summary>Invitar usuario</summary>
+      <form method="post" action="{% url 'grupo_invitar' grupo.pk %}">{% csrf_token %}
+        <label>Usuario
+          <select name="usuario">{% for usuario in datos.usuarios %}<option>{{ usuario.nombreUsuario }}</option>{% endfor %}</select>
+        </label>
+        <button class="gd-btn gd-btn-sm">Invitar</button>
+      </form>
+    </details>
+
+    <details class="gd-plegable" name="admin">
+      <summary>Retirar miembro</summary>
+      <form method="post" action="{% url 'grupo_expulsar' grupo.pk %}">{% csrf_token %}
+        <label>Miembro
+          <select name="usuario">{% for miembro in grupo.miembros %}<option>{{ miembro.nombreUsuario }}</option>{% endfor %}</select>
+        </label>
+        <button class="gd-btn gd-btn-sm peligro">Retirar</button>
+      </form>
+    </details>
+
+    {% if datos.es_administrador %}
+    <details class="gd-plegable" name="admin">
+      <summary>Cambiar rol</summary>
+      <form method="post" action="{% url 'grupo_cambiar_rol' grupo.pk %}">{% csrf_token %}
+        <label>Miembro
+          <select name="usuario">{% for miembro in grupo.miembros %}<option>{{ miembro.nombreUsuario }}</option>{% endfor %}</select>
+        </label>
+        <label>Rol
+          <select name="rol">
+            <option value="miembro">Miembro</option>
+            <option value="moderador">Moderador</option>
+            <option value="administrador">Administrador</option>
+          </select>
+        </label>
+        <button class="gd-btn gd-btn-sm">Cambiar rol</button>
+      </form>
+    </details>
+    {% endif %}
+
+    <details class="gd-plegable" name="admin">
+      <summary>Crear foro</summary>
+      <form method="post" action="{% url 'foro_crear' grupo.pk %}">{% csrf_token %}
+        <label>Nombre <input name="nombre" maxlength="80" required></label>
+        <label>Descripción <textarea name="descripcion" maxlength="500"></textarea></label>
+        <button class="gd-btn gd-btn-sm">Crear foro</button>
+      </form>
+    </details>
+  </div>
+  {% endif %}
+
+</div>
+{% endwith %}
+{% endblock %}

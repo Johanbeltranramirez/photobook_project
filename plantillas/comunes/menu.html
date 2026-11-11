@@ -1,0 +1,18 @@
+<nav class="menu" aria-label="Navegación principal">
+    <a href="{% url 'inicio' %}">Inicio</a>
+    {% if usuario_actual %}
+    <a href="{% url 'publicaciones_listar' %}">Publicaciones</a>
+    <a href="{% url 'colecciones_listar' %}">Colecciones</a>
+    <a href="{% url 'categorias_listar' %}">Categorías</a>
+    <a href="{% url 'exploracion_inicio' %}">Exploración</a>
+    {% if usuario_actual.rol == 'administrador' %}<a href="{% url 'usuarios_listar' %}">Usuarios</a>{% endif %}
+    <a href="{% url 'mensajes_listar' %}">Mensajes</a>
+    <a href="{% url 'grupos_listar' %}">Grupos</a>
+    <a href="{% url 'notificaciones_listar' %}">Notificaciones</a>
+    <a href="{% url 'moderaciones_listar' %}">Bloqueos</a>
+    <a href="{% url 'reportes_listar' %}">Reportes</a>
+    {% if usuario_actual.rol == 'administrador' %}<a href="{% url 'consultar_roles' %}">Roles</a>{% endif %}
+    {% if permiso_contenido %}<a href="{% url 'consultar_acciones' %}">Acciones administrativas</a>{% endif %}
+    {% if permiso_estadisticas %}<a href="{% url 'consultar_controles' %}">Control del sistema</a>{% endif %}
+    {% endif %}
+</nav>
