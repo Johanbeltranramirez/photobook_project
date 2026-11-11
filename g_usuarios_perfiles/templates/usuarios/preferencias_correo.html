@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block titulo %}Preferencias de correo · Photobook{% endblock %}
+{% block contenido %}
+<link rel="stylesheet" href="{% static 'g_usuarios_perfiles/cuentas.css' %}">
+<div class="encabezado_pagina">
+  <div><p class="sobre_titulo">TU CUENTA</p><h1>Preferencias de correo</h1></div>
+  <a class="boton secundario" href="{% url 'notificaciones_listar' %}">Ver mis notificaciones</a>
+</div>
+<p>Las notificaciones siempre aparecen dentro de Photobook. Aquí eliges cuáles quieres recibir además en <strong>{{ correo }}</strong>. Los correos de seguridad (como el cambio de contraseña) se envían siempre.</p>
+<form method="post">{% csrf_token %}
+  <ul class="cu-opciones">
+    {% for opcion in opciones %}
+      <li class="cu-opcion">
+        <div><strong id="titulo_{{ opcion.campo }}">{{ opcion.titulo }}</strong><small>{{ opcion.descripcion }}</small></div>
+        <label class="cu-interruptor"><input type="checkbox" name="{{ opcion.campo }}" aria-labelledby="titulo_{{ opcion.campo }}" {% if opcion.activo %}checked{% endif %}><span></span></label>
+      </li>
+    {% endfor %}
+  </ul>
+  <p><button type="submit">Guardar preferencias</button></p>
+</form>
+{% endblock %}

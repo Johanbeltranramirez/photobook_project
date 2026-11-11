@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block titulo %}{{ datos.recomendacion.publicacion.titulo|default:'Recomendación' }} · Photobook{% endblock %}
+{% block contenido %}
+{% include 'publicacion_org_contenido/parciales/_estilos.html' %}
+{% with recomendacion=datos.recomendacion %}
+
+<div class="pc-rec-detalle">
+  <div class="pc-escenario">
+    {% if recomendacion.publicacion.tipo == 'imagen' %}<img src="{{ recomendacion.publicacion.archivoUrl }}" alt="{{ recomendacion.publicacion.titulo|default:'Publicación' }}">{% else %}<video controls preload="metadata" playsinline src="{{ recomendacion.publicacion.archivoUrl }}"></video>{% endif %}
+  </div>
+  <div>
+    <p><span class="pc-insignia">{% include 'publicacion_org_contenido/parciales/_criterio.html' with criterio=recomendacion.criterio %}</span></p>
+    <h1>{{ recomendacion.publicacion.titulo|default:'Recomendación' }}</h1>
+    <p class="pc-suave">Te la sugerimos porque coincide con tus intereses.</p>
+    <div class="pc-gran-afinidad"><strong>{% widthratio recomendacion.puntuacion 1 100 %}%</strong><span class="pc-suave">de afinidad contigo</span></div>
+    <div class="pc-medidor"><span style="width: {% widthratio recomendacion.puntuacion 1 100 %}%"></span></div>
+
+    {% if recomendacion.factores %}
+      <ul class="pc-factores">
+        {% for factor in recomendacion.factores %}
+          <li><div class="pc-fila"><span>{{ factor.nombre|capfirst }}</span><span class="pc-suave">{% widthratio factor.peso 1 100 %}%</span></div><div class="pc-medidor"><span style="width: {% widthratio factor.peso 1 100 %}%"></span></div></li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    <div class="pc-acciones">
+      <a class="boton pc-boton-icono" href="{% url 'publicacion_por_url' %}?archivoUrl={{ recomendacion.publicacion.archivoUrl|urlencode }}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='ojo' %}Ver publicación</a>
+      {% if permiso_contenido %}<a class="boton secundario pc-boton-icono" href="{% url 'recomendacion_actualizar' recomendacion.pk %}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='editar' %}Editar</a>{% endif %}
+      <a class="boton pc-boton-fantasma pc-boton-icono" href="{% url 'recomendacion_eliminar' recomendacion.pk %}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='papelera' %}Descartar</a>
+    </div>
+  </div>
+</div>
+{% endwith %}
+{% endblock %}

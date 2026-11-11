@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block titulo %}Categorías · Photobook{% endblock %}
+{% block contenido %}
+{% include 'publicacion_org_contenido/parciales/_estilos.html' %}
+
+<div class="encabezado_pagina">
+  <div>
+    <p class="sobre_titulo">EXPLORAR</p>
+    <h1>Categorías</h1>
+  </div>
+  {% if permiso_contenido %}
+    <a class="boton pc-boton-icono" href="{% url 'categoria_crear' %}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='mas' %}Crear categoría</a>
+  {% endif %}
+</div>
+
+<div class="pc-barra">
+  <div class="pc-pastillas">
+    <a class="pc-pastilla {% if request.GET.orden != 'populares' %}activa{% endif %}" href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}{% endif %}">A – Z</a>
+    <a class="pc-pastilla {% if request.GET.orden == 'populares' %}activa{% endif %}" href="?orden=populares{% if request.GET.q %}&q={{ request.GET.q|urlencode }}{% endif %}">Más populares</a>
+  </div>
+  <form class="pc-buscador" method="get" role="search">
+    {% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='buscar' %}
+    <label class="solo_lectores" for="buscar_categoria">Buscar categorías</label>
+    <input id="buscar_categoria" type="search" name="q" value="{{ request.GET.q }}" placeholder="Buscar categorías">
+    {% if request.GET.orden == 'populares' %}<input type="hidden" name="orden" value="populares">{% endif %}
+    <button>Buscar</button>
+  </form>
+</div>
+
+{% if request.GET.q %}<p class="pc-resultado">{{ datos.total }} resultado{{ datos.total|pluralize }} para «{{ request.GET.q }}»</p>{% endif %}
+
+{% if datos.categorias %}
+  <ul class="mosaicos">
+    {% for categoria in datos.categorias %}
+      <li>
+        <a class="mosaico tono{% cycle '1' '2' '3' '4' %}" href="{% url 'categoria_detalle' categoria.slug %}">
+          <span class="mosaico_inicial" aria-hidden="true">{{ categoria.nombre|slice:":2"|capfirst }}</span>
+          <span class="mosaico_pie">
+            <h2>{{ categoria.nombre }}</h2>
+            <span class="mosaico_total">{{ categoria.totalPublicaciones }} publicación{{ categoria.totalPublicaciones|pluralize:"es" }}</span>
+          </span>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="vacio">
+    <p><strong>{% if request.GET.q %}No encontramos categorías con ese nombre.{% else %}Aún no hay categorías.{% endif %}</strong></p>
+    <p>{% if request.GET.q %}Prueba con otra palabra.{% else %}Un administrador puede crearlas.{% endif %}</p>
+  </div>
+{% endif %}
+
+{% endblock %}

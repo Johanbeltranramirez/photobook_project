@@ -1,4 +1,0 @@
-{% extends 'base.html' %}{% block contenido %}<h1>Mis recomendaciones</h1>{% if permiso_contenido %}<a class="boton" href="{% url 'recomendacion_crear' %}">Crear recomendación</a>{% endif %}
-{% for recomendacion in datos.recomendaciones %}<article class="fila"><a href="{% url 'recomendacion_detalle' recomendacion.pk %}">{{ recomendacion.publicacion.titulo|default:'Publicación' }}</a><p>{{ recomendacion.criterio|capfirst }} · {{ recomendacion.puntuacion|floatformat:2 }}</p></article>{% empty %}<p>No tienes recomendaciones. Configura tus preferencias en Exploración.</p>{% endfor %}
-<form method="post" action="{% url 'recomendaciones_marcar_vistas' %}">{% csrf_token %}<button>Marcar todas como vistas</button></form><form method="post" action="{% url 'recomendaciones_limpiar_vistas' %}">{% csrf_token %}<button class="secundario">Eliminar las vistas</button></form>
-{% endblock %}

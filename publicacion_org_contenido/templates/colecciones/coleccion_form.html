@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block titulo %}{% if datos.accion == 'crear' %}Nueva colección{% else %}Editar colección{% endif %} · Photobook{% endblock %}
+{% block contenido %}
+{% include 'publicacion_org_contenido/parciales/_estilos.html' %}
+{% with formulario=datos.formulario %}
+
+<div class="encabezado_pagina">
+  <div>
+    <p class="sobre_titulo">{% if datos.accion == 'crear' %}ORGANIZA TU INSPIRACIÓN{% else %}AJUSTA TU COLECCIÓN{% endif %}</p>
+    <h1>{% if datos.accion == 'crear' %}Nueva colección{% else %}Editar colección{% endif %}</h1>
+  </div>
+</div>
+
+<div class="formulario_doble">
+  <form method="post" class="formulario">{% csrf_token %}
+    {{ formulario.non_field_errors }}
+    <div class="campo">
+      <div class="caja {% if formulario.nombre.errors %}con_error{% endif %}"><label for="{{ formulario.nombre.id_for_label }}">Nombre</label>{{ formulario.nombre }}</div>
+      {{ formulario.nombre.errors }}
+    </div>
+    <div class="campo">
+      <div class="caja {% if formulario.descripcion.errors %}con_error{% endif %}"><label for="{{ formulario.descripcion.id_for_label }}">Descripción</label>{{ formulario.descripcion }}</div>
+      {{ formulario.descripcion.errors }}
+    </div>
+
+    <fieldset class="pc-opciones campo">
+      <legend>{{ formulario.privacidad.label }}</legend>
+      {% for radio in formulario.privacidad %}
+        <label class="pc-opcion"><input type="radio" name="{{ radio.data.name }}" value="{{ radio.data.value }}" {% if radio.data.selected %}checked{% endif %}>
+          <span class="pc-opcion-caja">
+            {% if radio.data.value == 'privada' %}{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='candado' %}<span><strong>Privada</strong><small>Solo tú y tus colaboradores.</small></span>{% else %}{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='mundo' %}<span><strong>Pública</strong><small>Cualquier persona de Photobook.</small></span>{% endif %}
+          </span>
+        </label>
+      {% endfor %}
+    </fieldset>
+    {{ formulario.privacidad.errors }}
+
+    <fieldset class="pc-opciones campo">
+      <legend>{{ formulario.tipo.label }}</legend>
+      {% for radio in formulario.tipo %}
+        <label class="pc-opcion"><input type="radio" name="{{ radio.data.name }}" value="{{ radio.data.value }}" {% if radio.data.selected %}checked{% endif %}>
+          <span class="pc-opcion-caja">
+            {% if radio.data.value == 'colaborativa' %}{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='personas' %}<span><strong>Colaborativa</strong><small>Puedes invitar a otras personas.</small></span>{% else %}{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='persona' %}<span><strong>Personal</strong><small>Solo tú agregas contenido.</small></span>{% endif %}
+          </span>
+        </label>
+      {% endfor %}
+    </fieldset>
+    {{ formulario.tipo.errors }}
+
+    <div class="pc-botones">
+      <button class="pc-boton-icono">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='check' %}Guardar</button>
+      <a class="boton pc-boton-fantasma" href="{% if datos.coleccion %}{% url 'coleccion_detalle' datos.coleccion.pk %}{% else %}{% url 'colecciones_listar' %}{% endif %}">Cancelar</a>
+    </div>
+  </form>
+
+  <aside class="vista_previa" aria-label="Vista previa de la colección" data-previa-coleccion>
+    <p class="vista_titulo">VISTA PREVIA</p>
+    <div class="pc-coleccion" style="max-width:280px">
+      <div class="pc-collage pc-vacia">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='carpeta' %}</div>
+      <div class="pc-coleccion-cuerpo">
+        <h2 data-previa-nombre>Nombre de la colección</h2>
+        <p class="pc-suave" data-previa-descripcion style="margin:0 0 8px">Aquí aparecerá la descripción.</p>
+        <div class="pc-coleccion-meta"><span data-previa-privacidad>Pública</span></div>
+      </div>
+    </div>
+  </aside>
+</div>
+{% endwith %}
+{% include 'publicacion_org_contenido/parciales/_script.html' %}
+{% endblock %}

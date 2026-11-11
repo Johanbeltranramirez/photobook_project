@@ -177,6 +177,48 @@
       }
     }
   },
+  "preferenciasCorreo": {
+    "bsonType": "object",
+    "required": [
+      "_id",
+      "usuario",
+      "seguidores",
+      "comentarios",
+      "reacciones",
+      "mensajes",
+      "avisos",
+      "fechaActualizacion"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "_id": {
+        "bsonType": "objectId"
+      },
+      "usuario": {
+        "bsonType": "string",
+        "maxLength": 30,
+        "minLength": 1
+      },
+      "seguidores": {
+        "bsonType": "bool"
+      },
+      "comentarios": {
+        "bsonType": "bool"
+      },
+      "reacciones": {
+        "bsonType": "bool"
+      },
+      "mensajes": {
+        "bsonType": "bool"
+      },
+      "avisos": {
+        "bsonType": "bool"
+      },
+      "fechaActualizacion": {
+        "bsonType": "date"
+      }
+    }
+  },
   "publicaciones": {
     "bsonType": "object",
     "required": [

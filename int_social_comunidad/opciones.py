@@ -2,6 +2,7 @@ import re
 
 TIPOS_MENSAJE = ('texto', 'imagen', 'video', 'archivo')
 TIPOS_REACCION = ('meGusta', 'amor', 'aplauso', 'sorpresa', 'triste', 'risa')
+ICONOS_REACCION = {'meGusta': '👍', 'amor': '❤️', 'aplauso': '👏', 'sorpresa': '😮', 'triste': '😢', 'risa': '😂'}
 FORMATOS_COMENTARIO = ('texto', 'markdown', 'html')
 
 TIPOS_GRUPO = ('publico', 'privado')

@@ -10,10 +10,12 @@ from publicacion_org_contenido.models import Categoria
 from admin_contrl_sys import views as administracion
 from .opciones import *
 from .forms import FormularioMensaje, FormularioGrupo, FormularioBloqueo
-from g_usuarios_perfiles.models import Usuario, Notificacion
+from g_usuarios_perfiles.models import Usuario
+from g_usuarios_perfiles.notificaciones import notificar
 from g_usuarios_perfiles.acceso import sesion_requerida, administrador_requerido, comprobar_propietario, resumen_usuario
 from photobook.consultas import documentos, existe_bloqueo
 from django.core.exceptions import PermissionDenied
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
 
 
@@ -122,7 +124,8 @@ def mensaje_crear(solicitud):
         contexto['errores'] = errores
         return render(solicitud, 'mensaje_form.html', {'datos': contexto})
     mensaje.save()
-    Notificacion.objects.create(usuarioNotificado=receptor['nombreUsuario'], usuarioOrigen=emisor['nombreUsuario'], tipo='mensaje', mensaje='Tienes un mensaje de ' + emisor['nombreUsuario'])
+    vista_previa = mensaje.contenido if mensaje.tipo == 'texto' and mensaje.contenido else 'Te envió un archivo adjunto.'
+    notificar(receptor['nombreUsuario'], 'mensaje', 'Tienes un mensaje de ' + emisor['nombreUsuario'], origen=emisor['nombreUsuario'], categoria='mensajes', asunto='Nuevo mensaje de ' + emisor['nombreUsuario'], ruta=reverse('mensaje_detalle', kwargs={'pk': mensaje.pk}), detalle=vista_previa, boton='Leer el mensaje')
     return redirect('mensaje_detalle', pk=mensaje.pk)
 
 @sesion_requerida
@@ -167,14 +170,20 @@ def mensaje_reaccionar(solicitud, pk):
     if errores:
         return render(solicitud, 'mensaje_detalle.html', {'datos': {'mensaje': mensaje, 'errores': errores}}, status=400)
     existente = next((reaccion for reaccion in mensaje.reacciones if reaccion['usuario']['nombreUsuario'] == usuario['nombreUsuario']), None)
+    nueva = False
     if existente is None:
         mensaje.reacciones.append({'usuario': usuario, 'tipoReaccion': tipoReaccion, 'fecha': timezone.now()})
+        nueva = True
     elif existente['tipoReaccion'] == tipoReaccion:
         mensaje.reacciones.remove(existente)
     else:
         existente['tipoReaccion'] = tipoReaccion
         existente['fecha'] = timezone.now()
+        nueva = True
     mensaje.save()
+    if nueva:
+        otro = mensaje.receptor['nombreUsuario'] if usuario['nombreUsuario'] == mensaje.emisor['nombreUsuario'] else mensaje.emisor['nombreUsuario']
+        notificar(otro, 'meGusta', '%s reaccionó %s a tu mensaje.' % (usuario['nombreUsuario'], ICONOS_REACCION[tipoReaccion]), origen=usuario['nombreUsuario'], categoria='reacciones', asunto='%s reaccionó a tu mensaje' % usuario['nombreUsuario'], ruta=reverse('mensaje_detalle', kwargs={'pk': mensaje.pk}), boton='Ver mensaje', ambito_bloqueo='mensajes')
     return redirect('mensaje_detalle', pk=mensaje.pk)
 
 @sesion_requerida
@@ -414,6 +423,7 @@ def grupo_invitar(solicitud, pk):
     grupo.miembros.append({**usuario, 'rol': 'miembro', 'fechaIngreso': timezone.now()})
     grupo.totalMiembros += 1
     grupo.save()
+    notificar(usuario['nombreUsuario'], 'sistema', '%s te agregó al grupo «%s».' % (quien, grupo.nombre), origen=quien, categoria='avisos', asunto='%s te agregó a un grupo' % quien, ruta=reverse('grupo_detalle', kwargs={'pk': grupo.pk}), boton='Ver el grupo', ambito_bloqueo='contenido')
     return redirect('grupo_detalle', pk=grupo.pk)
 
 @sesion_requerida
@@ -458,6 +468,7 @@ def grupo_cambiar_rol(solicitud, pk):
         return render(solicitud, 'grupo_detalle.html', {'datos': {'grupo': grupo, 'errores': errores}}, status=400)
     miembro['rol'] = rol
     grupo.save()
+    notificar(usuario, 'sistema', 'Tu rol en el grupo «%s» ahora es %s.' % (grupo.nombre, rol), origen=quien, categoria='avisos', asunto='Cambió tu rol en un grupo', ruta=reverse('grupo_detalle', kwargs={'pk': grupo.pk}), boton='Ver el grupo')
     return redirect('grupo_detalle', pk=grupo.pk)
 
 @sesion_requerida
@@ -482,6 +493,7 @@ def grupo_expulsar(solicitud, pk):
     grupo.miembros.remove(miembro)
     grupo.totalMiembros = max(0, grupo.totalMiembros - 1)
     grupo.save()
+    notificar(usuario, 'sistema', 'Ya no eres parte del grupo «%s».' % grupo.nombre, origen=quien, categoria='avisos', asunto='Saliste de un grupo')
     return redirect('grupo_detalle', pk=grupo.pk)
 
 
@@ -571,6 +583,9 @@ def foro_comentar(solicitud, pk, indice_foro):
         'fechaEdicion': None,
     })
     grupo.save()
+    responsables = [m['nombreUsuario'] for m in grupo.miembros if m['rol'] in ('administrador', 'moderador')]
+    for responsable in responsables[:20]:
+        notificar(responsable, 'comentario', '%s comentó en el foro «%s» del grupo «%s».' % (autor['nombreUsuario'], foro['nombre'], grupo.nombre), origen=autor['nombreUsuario'], categoria='comentarios', asunto='Nuevo comentario en el grupo «%s»' % grupo.nombre, ruta=reverse('grupo_detalle', kwargs={'pk': grupo.pk}), detalle=contenido, boton='Ver el foro', ambito_bloqueo='contenido')
     return redirect('grupo_detalle', pk=grupo.pk)
 
 @sesion_requerida

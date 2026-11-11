@@ -1,5 +1,0 @@
-{% extends 'base.html' %}
-{% block contenido %}
-<h1>{{ datos.accion|capfirst }} colección</h1>
-<form method="post" class="formulario">{% csrf_token %}{% include 'comunes/campos.html' with formulario=datos.formulario %}<button>Guardar</button></form>
-{% endblock %}

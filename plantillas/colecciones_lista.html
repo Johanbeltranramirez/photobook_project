@@ -1,3 +1,0 @@
-{% extends 'base.html' %}{% block contenido %}<h1>Colecciones</h1><a class="boton" href="{% url 'coleccion_crear' %}">Crear colección</a>
-{% for coleccion in datos.colecciones %}<article class="fila"><h2><a href="{% url 'coleccion_detalle' coleccion.pk %}">{{ coleccion.nombre }}</a></h2><p>{{ coleccion.creador.nombreUsuario }} · {{ coleccion.tipo|capfirst }} · {{ coleccion.privacidad|capfirst }}</p><p>{{ coleccion.publicaciones|length }} publicaciones</p></article>{% empty %}<p>No hay colecciones para mostrar.</p>{% endfor %}
-{% endblock %}

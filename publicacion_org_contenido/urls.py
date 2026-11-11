@@ -3,6 +3,8 @@ from django.urls import path, register_converter
 from .views import *
 
 urlpatterns = [
+    path('archivos/<str:nombre>', archivo_publicacion, name='archivo_publicacion'),
+
     path('colecciones/<oid:pk>/guardar/', coleccion_guardar_publicacion, name='coleccion_guardar_publicacion'),
     path('colecciones/<oid:pk>/quitar/<int:indice>/', coleccion_quitar_publicacion, name='coleccion_quitar_publicacion'),
     path('colecciones/<oid:pk>/colaboradores/', coleccion_colaboradores, name='coleccion_colaboradores'),
@@ -30,6 +32,7 @@ urlpatterns = [
     path('publicaciones/depurar/', publicaciones_depurar, name='publicaciones_depurar'),
     path('publicaciones/<oid:pk>/', publicacion_detalle, name='publicacion_detalle'),
     path('publicaciones/<oid:pk>/actualizar/', publicacion_actualizar, name='publicacion_actualizar'),
+    path('publicaciones/<oid:pk>/publicar/', publicacion_publicar, name='publicacion_publicar'),
     path('publicaciones/<oid:pk>/eliminar/', publicacion_eliminar, name='publicacion_eliminar'),
     path('publicaciones/<oid:pk>/comentar/', publicacion_comentar, name='publicacion_comentar'),
     path('publicaciones/<oid:pk>/reaccionar/', publicacion_reaccionar, name='publicacion_reaccionar'),

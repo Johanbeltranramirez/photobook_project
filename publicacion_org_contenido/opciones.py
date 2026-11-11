@@ -5,7 +5,19 @@ FORMATOS = ('jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov', 'webm')
 ESTADOS = ('publicado', 'borrador', 'eliminado')
 TIPOS_EDICION = ('recorte', 'rotacion', 'filtro', 'brillo', 'contraste', 'saturacion', 'texto')
 FORMATOS_COMENTARIO = ('texto', 'markdown', 'html')
-TIPOS_REACCION = ('meGusta', 'amor', 'aplauso', 'sorpresa', 'triste', 'risa')
+REACCIONES = (
+    ('meGusta', '👍', 'Me gusta'),
+    ('amor', '❤️', 'Me encanta'),
+    ('aplauso', '👏', 'Aplauso'),
+    ('sorpresa', '😮', 'Sorpresa'),
+    ('triste', '😢', 'Tristeza'),
+    ('risa', '😂', 'Risa'),
+)
+TIPOS_REACCION = tuple(dato[0] for dato in REACCIONES)
+EXTENSIONES_IMAGEN = ('jpg', 'jpeg', 'png', 'gif')
+EXTENSIONES_VIDEO = ('mp4', 'mov', 'webm')
+TAMANIO_MAXIMO_IMAGEN = 10 * 1024 * 1024
+TAMANIO_MAXIMO_VIDEO = 100 * 1024 * 1024
 TIPOS_COLECCION = ('personal', 'colaborativa')
 PRIVACIDADES = ('publica', 'privada')
 CRITERIOS = ('etiquetas', 'coleccion', 'tendencia', 'similitud', 'preferencias')

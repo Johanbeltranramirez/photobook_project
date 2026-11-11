@@ -77,3 +77,21 @@ class Notificacion(models.Model):
 
     def __str__(self):
         return f"{self.tipo} {self.usuarioNotificado}"
+
+class PreferenciaCorreo(models.Model):
+    _id = models.ObjectIdField()
+
+    usuario = models.CharField(max_length=30, unique=True)
+    seguidores = models.BooleanField(default=True)
+    comentarios = models.BooleanField(default=True)
+    reacciones = models.BooleanField(default=True)
+    mensajes = models.BooleanField(default=True)
+    avisos = models.BooleanField(default=True)
+    fechaActualizacion = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "preferenciasCorreo"
+        managed = False
+
+    def __str__(self):
+        return f"Preferencias de correo de {self.usuario}"

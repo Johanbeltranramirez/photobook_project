@@ -55,3 +55,60 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'estaticos']
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+CORREO_USUARIO = os.environ.get(
+    'PHOTOBOOK_CORREO_USUARIO',
+    'johan.ramirez.beltran@gmail.com'
+).strip()
+
+CORREO_CLAVE = os.environ.get(
+    'PHOTOBOOK_CORREO_CLAVE',
+    'xccs vfua rsfm dkjz'
+).replace(' ', '')
+
+EMAIL_HOST = os.environ.get(
+    'PHOTOBOOK_CORREO_SERVIDOR',
+    'smtp.gmail.com'
+)
+
+EMAIL_PORT = int(os.environ.get(
+    'PHOTOBOOK_CORREO_PUERTO',
+    '587'
+))
+
+EMAIL_USE_SSL = False
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = CORREO_USUARIO
+EMAIL_HOST_PASSWORD = CORREO_CLAVE
+
+EMAIL_TIMEOUT = 20
+
+EMAIL_BACKEND = (
+    'photobook.correo_smtp.EmailBackend'
+    if CORREO_USUARIO and CORREO_CLAVE
+    else 'django.core.mail.backends.console.EmailBackend'
+)
+
+DEFAULT_FROM_EMAIL = f'Photobook <{CORREO_USUARIO}>'
+
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+URL_BASE_SITIO = os.environ.get(
+    'PHOTOBOOK_URL_BASE',
+    'http://127.0.0.1:8000'
+)
+
+TIEMPO_TOKEN_RESTABLECER = int(
+    os.environ.get('PHOTOBOOK_TOKEN_MINUTOS', '60')
+) * 60
+
+# Logs visibles de los errores de envío (antes se perdían en el hilo)
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {'consola': {'class': 'logging.StreamHandler'}},
+    'loggers': {
+        'photobook.correo': {'handlers': ['consola'], 'level': 'INFO', 'propagate': False},
+    },
+}

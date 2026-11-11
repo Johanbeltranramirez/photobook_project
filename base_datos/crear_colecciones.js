@@ -1999,6 +1999,48 @@ var esquemas = {
         "minLength": 1
       }
     }
+  },
+  "preferenciasCorreo": {
+    "bsonType": "object",
+    "required": [
+      "_id",
+      "usuario",
+      "seguidores",
+      "comentarios",
+      "reacciones",
+      "mensajes",
+      "avisos",
+      "fechaActualizacion"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "_id": {
+        "bsonType": "objectId"
+      },
+      "usuario": {
+        "bsonType": "string",
+        "maxLength": 30,
+        "minLength": 1
+      },
+      "seguidores": {
+        "bsonType": "bool"
+      },
+      "comentarios": {
+        "bsonType": "bool"
+      },
+      "reacciones": {
+        "bsonType": "bool"
+      },
+      "mensajes": {
+        "bsonType": "bool"
+      },
+      "avisos": {
+        "bsonType": "bool"
+      },
+      "fechaActualizacion": {
+        "bsonType": "date"
+      }
+    }
   }
 };
 var indices = {
@@ -2043,6 +2085,11 @@ var indices = {
       "usuario.nombreUsuario",
       "publicacion.archivoUrl",
       "criterio"
+    ]
+  ],
+  "preferenciasCorreo": [
+    [
+      "usuario"
     ]
   ]
 };

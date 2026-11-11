@@ -1,5 +1,0 @@
-{% extends 'base.html' %}{% block contenido %}<h1>Publicaciones</h1>
-<div class="acciones"><a class="boton" href="{% url 'publicacion_crear' %}">Crear publicación</a><a class="boton secundario" href="{% url 'publicaciones_en_debate' %}">En debate</a><a class="boton secundario" href="{% url 'publicaciones_listar' %}?autor={{ usuario_actual.nombreUsuario }}&estado=borrador">Mis borradores</a></div>
-<form method="get" action="{% url 'publicaciones_buscar' %}"><label for="buscar">Buscar publicaciones</label><input id="buscar" name="q" value="{{ request.GET.q }}"><button>Buscar</button></form>
-{% include 'comunes/tarjetas.html' with publicaciones=datos.publicaciones %}
-{% endblock %}

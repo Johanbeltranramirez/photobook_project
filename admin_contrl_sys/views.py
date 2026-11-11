@@ -1,11 +1,13 @@
 from bson import ObjectId
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.core.exceptions import PermissionDenied
 from g_usuarios_perfiles.acceso import sesion_requerida, administrador_requerido, comprobar_propietario, puede_administrar
 from g_usuarios_perfiles.models import Usuario
+from g_usuarios_perfiles.notificaciones import notificar
 from publicacion_org_contenido.models import Publicacion
 from .models import Rol, AccionAdministrativa, ReporteContenido, ControlSistema
 from .forms import FormularioRol, FormularioAccion, FormularioReporte, FormularioResolucion, FormularioControl
@@ -100,6 +102,7 @@ def resolver_reporte(solicitud, pk):
             reporte.accion_tomada = datos["accion_tomada"]
             reporte.fecha_resolucion = fecha
             reporte.save()
+            notificar(reporte.reportado_por, 'sistema', 'Tu reporte fue %s.' % ('resuelto' if reporte.estado == 'resuelto' else 'descartado'), origen=solicitud.usuario.nombreUsuario, categoria='avisos', asunto='Actualización de tu reporte', ruta=reverse('reporte_detalle', kwargs={'pk': str(reporte.pk)}), detalle=reporte.accion_tomada, boton='Ver el reporte')
             return redirect("reporte_detalle", pk=str(reporte.pk))
     return render(solicitud, "reportes/formulario.html", {"formulario": formulario, "titulo": "Resolver reporte"})
 

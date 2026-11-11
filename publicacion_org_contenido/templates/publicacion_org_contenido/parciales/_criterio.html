@@ -1,0 +1,1 @@
+{% if criterio == 'etiquetas' %}🏷️ Por tus etiquetas{% elif criterio == 'coleccion' %}📁 Por tus colecciones{% elif criterio == 'tendencia' %}🔥 En tendencia{% elif criterio == 'similitud' %}🧩 Similar a lo que te gusta{% elif criterio == 'preferencias' %}⭐ Según tus preferencias{% else %}{{ criterio|capfirst }}{% endif %}
