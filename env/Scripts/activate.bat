@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=C:\photobook_project\env
+set VIRTUAL_ENV=C:\Users\johan\Downloads\photobook_project\env
 
 if not defined PROMPT set PROMPT=$P$G
 

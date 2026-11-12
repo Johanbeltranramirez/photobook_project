@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block titulo %}Notificaciones · Photobook{% endblock %}
+{% block contenido %}
+<link rel="stylesheet" href="{% static 'g_usuarios_perfiles/css/cuentas.css' %}">
+<div class="encabezado_pagina">
+  <div><p class="sobre_titulo">ACTIVIDAD</p><h1>Notificaciones</h1></div>
+  <a class="boton secundario" href="{% url 'preferencias_correo' %}">Preferencias de correo</a>
+</div>
+{% for notificacion in notificaciones %}
+  <article class="fila cu-notificacion {% if not notificacion.notificacionLeer %}sin_leer{% endif %}">
+    <span class="cu-tipo" aria-hidden="true">{% if notificacion.tipo == 'seguir' %}👥{% elif notificacion.tipo == 'meGusta' %}❤️{% elif notificacion.tipo == 'comentario' %}💬{% elif notificacion.tipo == 'mensaje' %}✉️{% else %}🔔{% endif %}</span>
+    <div style="flex:1">
+      <p>{{ notificacion.mensaje }}</p>
+      <small>{{ notificacion.fechaCreacion|date:'d/m/Y H:i' }}</small>
+      <div class="acciones">
+        {% if not notificacion.notificacionLeer %}<form method="post" action="{% url 'notificacion_leer' notificacion.pk %}">{% csrf_token %}<button>Marcar como leída</button></form>{% else %}<span>Leída</span>{% endif %}
+        <a href="{% url 'notificacion_eliminar' notificacion.pk %}">Eliminar</a>
+      </div>
+    </div>
+  </article>
+{% empty %}
+  <div class="vacio"><p><strong>No tienes notificaciones.</strong></p><p>Cuando alguien te siga, comente o reaccione, lo verás aquí.</p></div>
+{% endfor %}
+{% endblock %}

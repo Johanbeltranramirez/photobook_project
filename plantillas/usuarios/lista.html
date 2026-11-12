@@ -1,4 +1,0 @@
-{% extends 'base.html' %}{% block contenido %}<h1>Usuarios</h1>
-<form method="get"><label for="buscar">Buscar usuario</label><input id="buscar" name="buscar" value="{{ request.GET.buscar }}"><button>Buscar</button></form>
-{% for perfil in usuarios %}<article class="fila"><h2><a href="{% url 'perfil_detalle' perfil.nombreUsuario %}">{{ perfil.nombreUsuario }}</a></h2><p>{{ perfil.rol|capfirst }}</p></article>{% empty %}<p>No hay usuarios que coincidan.</p>{% endfor %}
-{% endblock %}

@@ -1,7 +1,0 @@
-{% extends 'base.html' %}
-{% block contenido %}
-<p class="sobre_titulo">TU ESPACIO CREATIVO</p><h1>Ideas que vale la pena compartir</h1>
-<p>Publica tus imágenes, organiza tus colecciones y encuentra inspiración en la comunidad.</p>
-{% if usuario_actual %}<a class="boton" href="{% url 'publicacion_crear' %}">Crear publicación</a><a class="boton secundario" href="{% url 'exploracion_inicio' %}">Explorar mis recomendaciones</a>{% endif %}
-<h2>Publicaciones recientes</h2>{% include 'comunes/tarjetas.html' %}
-{% endblock %}

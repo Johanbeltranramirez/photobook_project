@@ -1,22 +1,21 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block titulo %}Photobook{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'estilos.css' %}">
+    {% include 'estructura/estilos.html' %}
 </head>
 <body>
-    {% include 'comunes/cabecera.html' %}
+    {% include 'estructura/cabecera.html' %}
     <div class="estructura">
-        {% include 'comunes/menu.html' %}
+        {% include 'estructura/menu.html' %}
         <main>
             {% for mensaje in messages %}<p class="aviso">{{ mensaje }}</p>{% endfor %}
             {% for error in datos.errores %}<p class="error">{{ error }}</p>{% endfor %}
             {% block contenido %}{% endblock %}
         </main>
     </div>
-    {% include 'comunes/pie.html' %}
+    {% include 'estructura/pie.html' %}
 </body>
 </html>

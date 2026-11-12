@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block titulo %}Nueva contraseña · Photobook{% endblock %}
+{% block contenido %}
+<link rel="stylesheet" href="{% static 'g_usuarios_perfiles/css/cuentas.css' %}">
+<section class="cu-tarjeta">
+  {% if valido %}
+    <h1>Crea tu nueva contraseña</h1>
+    <p>Para la cuenta <strong>{{ usuario_token.nombreUsuario }}</strong>. Usa al menos 8 caracteres.</p>
+    <form method="post" class="formulario">{% csrf_token %}
+      {% include 'componentes/campos.html' %}
+      <button type="submit">Guardar contraseña</button>
+    </form>
+  {% else %}
+    <div class="cu-icono" aria-hidden="true">⏰</div>
+    <h1>Este enlace ya no es válido</h1>
+    <p>Puede haber vencido o ya se usó. Por seguridad, cada enlace funciona una sola vez.</p>
+    <a class="boton" href="{% url 'olvido_contrasena' %}">Pedir un enlace nuevo</a>
+  {% endif %}
+</section>
+{% endblock %}

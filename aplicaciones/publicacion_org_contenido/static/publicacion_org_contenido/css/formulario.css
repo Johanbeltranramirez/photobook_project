@@ -1,0 +1,29 @@
+.pc-formulario { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 36px; align-items: start; max-width: 1060px; }
+.pc-columna > .campo:first-child { margin-top: 0; }
+.pc-zona { position: relative; display: grid; place-items: center; min-height: 320px; padding: 20px; border: 2px dashed #bdb8b2; border-radius: var(--radio); background: #fffaf2; text-align: center; cursor: pointer; overflow: hidden; transition: border-color .15s ease, background .15s ease; }
+.pc-zona:hover, .pc-zona.arrastrando { border-color: var(--fuerte); background: var(--suave); }
+.pc-zona.con_error { border-color: var(--error); }
+.pc-zona input[type=file] { position: absolute; inset: 0; width: 100%; max-width: none; height: 100%; opacity: 0; cursor: pointer; }
+.pc-zona-texto { pointer-events: none; }
+.pc-zona-texto .pc-icono { width: 44px; height: 44px; color: var(--fuerte-hover); }
+.pc-zona-texto strong { display: block; margin: 8px 0 4px; font-size: 18px; }
+.pc-zona-texto span { font-size: 14px; color: var(--texto-suave); }
+.pc-zona.con_archivo .pc-zona-texto { display: none; }
+.pc-zona-previa { display: none; position: absolute; inset: 0; background: #231f1c; }
+.pc-zona.con_archivo .pc-zona-previa { display: grid; place-items: center; }
+.pc-zona-previa img, .pc-zona-previa video { max-width: 100%; max-height: 100%; pointer-events: none; }
+.pc-zona-cambiar { display: none; position: absolute; right: 12px; bottom: 12px; padding: 6px 14px; border-radius: 999px; background: rgba(255, 255, 255, .94); font-size: 13px; font-weight: bold; pointer-events: none; }
+.pc-zona.con_archivo .pc-zona-cambiar { display: block; }
+.pc-nombre-archivo { margin: 8px 2px 0; font-size: 13px; color: var(--texto-suave); overflow-wrap: anywhere; }
+.pc-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pc-chip { position: relative; display: inline-block; margin: 0; font-weight: normal; }
+.pc-chip input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.pc-chip span { display: inline-block; padding: 6px 15px; border: 1px solid var(--borde); border-radius: 999px; cursor: pointer; font-size: 14px; transition: background .15s ease; }
+.pc-chip:hover span { background: var(--suave); }
+.pc-chip input:checked + span { background: var(--fuerte); border-color: var(--fuerte); font-weight: bold; }
+.pc-chip input:focus-visible + span { outline: 3px solid var(--foco); outline-offset: 2px; }
+.pc-vista-etiquetas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.pc-contador-texto { text-align: right; margin: 4px 2px 0; font-size: 12px; color: var(--texto-suave); }
+.pc-botones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+.pc-botones .boton, .pc-botones button { margin: 0; }
+.pc-campo-etiqueta { margin-bottom: 6px; font-weight: bold; }

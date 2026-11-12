@@ -2,7 +2,7 @@ import os
 import sys
 
 
-def main():
+def principal():
 
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'photobook.settings')
     try:
@@ -13,4 +13,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    principal()
