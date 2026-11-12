@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block titulo %}{% if datos.accion == 'crear' %}Nueva recomendación{% else %}Editar recomendación{% endif %} · Photobook{% endblock %}
+{% block contenido %}
+{% include 'publicacion_org_contenido/parciales/_estilos.html' %}
+{% with formulario=datos.formulario %}
+
+<div class="encabezado_pagina">
+  <div>
+    <p class="sobre_titulo">ADMINISTRACIÓN DE CONTENIDO</p>
+    <h1>{% if datos.accion == 'crear' %}Nueva recomendación{% else %}Editar recomendación{% endif %}</h1>
+  </div>
+</div>
+
+<form method="post" class="formulario">{% csrf_token %}
+  {{ formulario.non_field_errors }}
+  <div class="campo"><div class="caja {% if formulario.usuario.errors %}con_error{% endif %}"><label for="{{ formulario.usuario.id_for_label }}">{{ formulario.usuario.label }}</label>{{ formulario.usuario }}</div>{{ formulario.usuario.errors }}</div>
+  <div class="campo"><div class="caja {% if formulario.archivoUrl.errors %}con_error{% endif %}"><label for="{{ formulario.archivoUrl.id_for_label }}">{{ formulario.archivoUrl.label }}</label>{{ formulario.archivoUrl }}</div>{{ formulario.archivoUrl.errors }}</div>
+  <div class="campo"><div class="caja {% if formulario.criterio.errors %}con_error{% endif %}"><label for="{{ formulario.criterio.id_for_label }}">{{ formulario.criterio.label }}</label>{{ formulario.criterio }}</div>{{ formulario.criterio.errors }}</div>
+  <div class="campo">
+    <div class="caja {% if formulario.puntuacion.errors %}con_error{% endif %}">
+      <label for="{{ formulario.puntuacion.id_for_label }}">{{ formulario.puntuacion.label }}</label>
+      <div class="pc-puntuacion">{{ formulario.puntuacion }}<output for="{{ formulario.puntuacion.id_for_label }}"></output></div>
+    </div>
+    {{ formulario.puntuacion.errors }}
+  </div>
+  <div class="pc-botones">
+    <button class="pc-boton-icono">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='check' %}Guardar</button>
+    <a class="boton pc-boton-fantasma" href="{% url 'recomendaciones_listar' %}">Cancelar</a>
+  </div>
+</form>
+{% endwith %}
+{% include 'publicacion_org_contenido/parciales/_script.html' %}
+{% endblock %}

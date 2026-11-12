@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block titulo %}{{ datos.publicacion.titulo|default:'Publicación' }} · Photobook{% endblock %}
+{% block contenido %}
+{% include 'publicacion_org_contenido/parciales/_estilos.html' %}
+{% with publicacion=datos.publicacion %}
+<article class="pc-detalle">
+
+  <header class="pc-detalle-cab">
+    <div class="pc-fila">
+      {% include 'publicacion_org_contenido/parciales/_avatar.html' with usuario=publicacion.autor clase='pc-avatar-lg' %}
+      <div>
+        <a href="{% url 'perfil_detalle' publicacion.autor.nombreUsuario %}">{{ publicacion.autor.nombreUsuario }}</a>
+        <small>{{ publicacion.fechaPublicacion|date:'d \d\e F \d\e Y' }}</small>
+      </div>
+    </div>
+    {% if datos.puede_gestionar %}
+      <div class="pc-acciones">
+        <a class="boton secundario pc-boton-icono" href="{% url 'publicacion_actualizar' publicacion.pk %}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='editar' %}Editar</a>
+        <a class="boton secundario pc-boton-icono" href="{% url 'publicacion_eliminar' publicacion.pk %}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='papelera' %}Eliminar</a>
+      </div>
+    {% endif %}
+  </header>
+
+  {% if publicacion.estado == 'borrador' %}
+    <div class="pc-aviso-borrador">
+      <span class="pc-con-icono">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='borrador' %}<span><strong>Es un borrador.</strong> Solo tú puedes verlo por ahora.</span></span>
+      {% if datos.puede_gestionar %}
+        <form method="post" action="{% url 'publicacion_publicar' publicacion.pk %}">{% csrf_token %}<button class="pc-boton-icono">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='enviar' %}Publicar ahora</button></form>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="pc-escenario">
+    {% if publicacion.tipo == 'imagen' %}
+      <img src="{{ publicacion.archivoUrl }}" alt="{{ publicacion.titulo|default:'Publicación' }}">
+    {% else %}
+      <video controls preload="metadata" playsinline src="{{ publicacion.archivoUrl }}"></video>
+    {% endif %}
+  </div>
+
+  <h1>{{ publicacion.titulo|default:'Sin título' }}</h1>
+  {% if publicacion.descripcion %}<p class="pc-descripcion">{{ publicacion.descripcion|linebreaksbr }}</p>{% endif %}
+  {% if publicacion.categorias or publicacion.etiquetas %}
+    <div class="pc-taxonomia">
+      {% for categoria in publicacion.categorias %}<a class="pc-categoria" href="{% url 'categoria_detalle' categoria.slug %}">{{ categoria.nombre }}</a>{% endfor %}
+      {% for etiqueta in publicacion.etiquetas %}<span class="pc-etiqueta">#{{ etiqueta }}</span>{% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="pc-interaccion" id="reacciones">
+    <form class="pc-reacciones" method="post" action="{% url 'publicacion_reaccionar' publicacion.pk %}" aria-label="Reaccionar a la publicación">{% csrf_token %}
+      {% for reaccion in datos.resumen_reacciones %}
+        <button class="pc-reaccion {% if reaccion.mia %}activa{% endif %}" name="tipoReaccion" value="{{ reaccion.tipo }}" title="{{ reaccion.etiqueta }}" aria-pressed="{% if reaccion.mia %}true{% else %}false{% endif %}">
+          <span class="pc-emoji" aria-hidden="true">{{ reaccion.icono }}</span>
+          <span class="solo_lectores">{{ reaccion.etiqueta }}</span>
+          <span class="pc-cuenta">{% if reaccion.total %}{{ reaccion.total }}{% endif %}</span>
+        </button>
+      {% endfor %}
+    </form>
+
+    <div class="pc-secundarias">
+      <a class="boton secundario pc-boton-icono" href="#comentarios">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='comentario' %}{{ publicacion.totalComentarios }}<span class="solo_lectores"> comentarios</span></a>
+      {% if publicacion.estado == 'publicado' %}
+        <details class="pc-menu">
+          <summary>{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='guardar' %}Guardar</summary>
+          <div class="pc-menu-lista">
+            {% for dato in datos.mis_colecciones %}
+              {% if dato.contiene %}
+                <button type="button" class="pc-guardada" disabled>{{ dato.coleccion.nombre }}{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='check' %}</button>
+              {% else %}
+                <form method="post" action="{% url 'coleccion_guardar_publicacion' dato.coleccion.pk %}">{% csrf_token %}<input type="hidden" name="archivoUrl" value="{{ publicacion.archivoUrl }}"><button>{{ dato.coleccion.nombre }}{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='mas' %}</button></form>
+              {% endif %}
+            {% empty %}
+              <p>Aún no tienes colecciones.</p>
+            {% endfor %}
+            <a class="boton secundario pc-boton-pequeno" href="{% url 'coleccion_crear' %}">Crear colección</a>
+          </div>
+        </details>
+      {% endif %}
+      <a class="boton pc-boton-fantasma pc-boton-icono" href="{% url 'reporte_crear' %}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='bandera' %}Reportar</a>
+    </div>
+  </div>
+
+  {% if datos.quienes_reaccionaron %}
+    <details class="pc-quienes">
+      <summary>{{ publicacion.totalReacciones }} reacci{{ publicacion.totalReacciones|pluralize:"ón,ones" }} · ver quién reaccionó</summary>
+      <ul>
+        {% for dato in datos.quienes_reaccionaron %}
+          <li>{% include 'publicacion_org_contenido/parciales/_avatar.html' with usuario=dato.usuario clase='pc-avatar-sm' %}<span>{{ dato.usuario.nombreUsuario }}</span><span title="{{ dato.etiqueta }}">{{ dato.icono }}</span></li>
+        {% endfor %}
+      </ul>
+    </details>
+  {% endif %}
+
+  {% include 'publicacion_org_contenido/parciales/_comentarios.html' %}
+</article>
+{% endwith %}
+{% include 'publicacion_org_contenido/parciales/_script.html' %}
+{% endblock %}

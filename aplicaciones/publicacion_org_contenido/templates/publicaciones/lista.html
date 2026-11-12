@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block titulo %}Publicaciones · Photobook{% endblock %}
+{% block contenido %}
+{% include 'publicacion_org_contenido/parciales/_estilos.html' %}
+
+<div class="encabezado_pagina">
+  <div>
+    <p class="sobre_titulo">COMPARTE Y DESCUBRE</p>
+    <h1>{% if datos.busqueda %}Resultados de búsqueda{% elif request.GET.estado == 'borrador' %}Mis borradores{% else %}Publicaciones{% endif %}</h1>
+  </div>
+  <a class="boton pc-boton-icono" href="{% url 'publicacion_crear' %}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='subir' %}Nueva publicación</a>
+</div>
+
+<div class="pc-barra">
+  <nav class="pc-pastillas" aria-label="Filtrar publicaciones">
+    <a class="pc-pastilla {% if not request.GET.autor and not datos.estado and not datos.busqueda and not request.GET.categoria %}activa{% endif %}" href="{% url 'publicaciones_listar' %}">Todas</a>
+    <a class="pc-pastilla {% if request.GET.autor == usuario_actual.nombreUsuario and request.GET.estado != 'borrador' %}activa{% endif %}" href="{% url 'publicaciones_listar' %}?autor={{ usuario_actual.nombreUsuario|urlencode }}">Mis publicaciones</a>
+    <a class="pc-pastilla {% if request.GET.estado == 'borrador' %}activa{% endif %}" href="{% url 'publicaciones_listar' %}?autor={{ usuario_actual.nombreUsuario|urlencode }}&estado=borrador">Mis borradores</a>
+    <a class="pc-pastilla {% if datos.estado == 'en debate' %}activa{% endif %}" href="{% url 'publicaciones_en_debate' %}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='comentario' %}En debate</a>
+  </nav>
+  <form class="pc-buscador" method="get" action="{% url 'publicaciones_buscar' %}" role="search">
+    {% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='buscar' %}
+    <label class="solo_lectores" for="buscar">Buscar publicaciones</label>
+    <input id="buscar" type="search" name="q" value="{{ datos.busqueda|default:'' }}" placeholder="Buscar por título o descripción">
+    <button>Buscar</button>
+  </form>
+</div>
+
+{% if datos.busqueda %}<p class="pc-resultado">{{ datos.total }} resultado{{ datos.total|pluralize }} para «{{ datos.busqueda }}»</p>{% endif %}
+
+{% if request.GET.estado == 'borrador' and datos.publicaciones %}
+  <form method="post" action="{% url 'publicaciones_estado_masivo' %}" data-confirmar="¿Publicar todos tus borradores?">{% csrf_token %}
+    <input type="hidden" name="estadoActual" value="borrador"><input type="hidden" name="estadoNuevo" value="publicado">
+    <button class="secundario pc-boton-icono">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='check' %}Publicar todos mis borradores</button>
+  </form>
+{% endif %}
+
+{% if datos.publicaciones %}
+  <ul class="pc-rejilla">
+    {% for publicacion in datos.publicaciones %}{% include 'publicacion_org_contenido/parciales/_tarjeta_publicacion.html' %}{% endfor %}
+  </ul>
+{% else %}
+  <div class="vacio">
+    {% if datos.busqueda %}
+      <p><strong>No encontramos nada para «{{ datos.busqueda }}».</strong></p><p>Revisa la ortografía o prueba con otra palabra.</p>
+    {% elif request.GET.estado == 'borrador' %}
+      <p><strong>No tienes borradores.</strong></p><p>Cuando guardes una publicación como borrador aparecerá aquí.</p>
+    {% else %}
+      <p><strong>Todavía no hay publicaciones para mostrar.</strong></p><p><a href="{% url 'publicacion_crear' %}">Comparte la primera</a>.</p>
+    {% endif %}
+  </div>
+{% endif %}
+{% include 'publicacion_org_contenido/parciales/_script.html' %}
+{% endblock %}

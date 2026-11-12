@@ -1,0 +1,11 @@
+{% extends 'base.html' %}{% block contenido %}<h1>{% if es_gestor %}Gestión de usuarios{% else %}Usuarios{% endif %}</h1>
+<form method="get"><label for="buscar">Buscar usuario</label><input id="buscar" name="buscar" value="{{ request.GET.buscar }}"><button>Buscar</button></form>
+{% if es_gestor %}
+<div class="tabla"><table><thead><tr><th>Usuario</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Opciones</th></tr></thead><tbody>
+{% for perfil in usuarios %}<tr><td><a href="{% url 'perfil_detalle' perfil.nombreUsuario %}">{{ perfil.nombreUsuario }}</a></td><td>{{ perfil.correo }}</td><td>{{ perfil.rol|capfirst }}</td><td>{% if perfil.activo %}Activo{% else %}<span class="error">Desactivado</span>{% endif %}</td>
+<td>{% if perfil.activo %}<a href="{% url 'perfil_actualizar' perfil.nombreUsuario %}">Editar</a>{% if es_administrador %} · <a href="{% url 'asignar_rol' perfil.nombreUsuario %}">Asignar rol</a>{% endif %} · <a href="{% url 'perfil_eliminar' perfil.nombreUsuario %}">Desactivar</a>{% endif %}</td></tr>
+{% empty %}<tr><td>No hay usuarios que coincidan.</td></tr>{% endfor %}</tbody></table></div>
+{% else %}
+{% for perfil in usuarios %}<article class="fila"><h2><a href="{% url 'perfil_detalle' perfil.nombreUsuario %}">{{ perfil.nombreUsuario }}</a></h2><p>{{ perfil.rol|capfirst }}</p></article>{% empty %}<p>No hay usuarios que coincidan.</p>{% endfor %}
+{% endif %}
+{% endblock %}

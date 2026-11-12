@@ -1,0 +1,57 @@
+<section class="pc-comentarios" id="comentarios">
+  <h2>Comentarios <span class="pc-contador">{{ publicacion.totalComentarios }}</span></h2>
+
+  <div class="pc-escribir">
+    {% include 'publicacion_org_contenido/parciales/_avatar.html' with usuario=usuario_actual clase='' %}
+    <form method="post" action="{% url 'publicacion_comentar' publicacion.pk %}">{% csrf_token %}
+      <label class="solo_lectores" for="nuevo_comentario">Escribe un comentario</label>
+      <textarea id="nuevo_comentario" name="contenido" required maxlength="500" data-contador="contador_nuevo" placeholder="Escribe un comentario…"></textarea>
+      <div class="pc-escribir-pie">
+        <span class="pc-suave" id="contador_nuevo">0 / 500</span>
+        <button class="pc-boton-icono">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='enviar' %}Comentar</button>
+      </div>
+    </form>
+  </div>
+
+  {% if publicacion.comentarios %}
+  <ul class="pc-lista-comentarios">
+    {% for comentario in publicacion.comentarios %}
+      <li class="pc-comentario" id="comentario-{{ forloop.counter0 }}">
+        {% include 'publicacion_org_contenido/parciales/_avatar.html' with usuario=comentario.autor clase='' %}
+        <div class="pc-comentario-cuerpo">
+          <div class="pc-burbuja {% if comentario.autor.nombreUsuario == publicacion.autor.nombreUsuario %}pc-del-autor{% endif %}">
+            <div class="pc-burbuja-autor">
+              <a href="{% url 'perfil_detalle' comentario.autor.nombreUsuario %}">{{ comentario.autor.nombreUsuario }}</a>
+              {% if comentario.autor.nombreUsuario == publicacion.autor.nombreUsuario %}<span class="pc-insignia">Autor</span>{% endif %}
+            </div>
+            <p>{{ comentario.contenido|linebreaksbr }}</p>
+          </div>
+          <div class="pc-comentario-pie">
+            <span>hace {{ comentario.fechaCreacion|timesince }}{% if comentario.estado == 'editado' %} · editado{% endif %}</span>
+            {% if usuario_actual.nombreUsuario == comentario.autor.nombreUsuario or es_administrador %}
+              <details class="pc-editar-comentario">
+                <summary>Editar</summary>
+                <form method="post" action="{% url 'comentario_actualizar' publicacion.pk forloop.counter0 %}">{% csrf_token %}
+                  <label class="solo_lectores" for="editar_{{ forloop.counter0 }}">Editar comentario</label>
+                  <textarea id="editar_{{ forloop.counter0 }}" name="contenido" required maxlength="500">{{ comentario.contenido }}</textarea>
+                  <button>Guardar cambio</button>
+                </form>
+              </details>
+              <form method="post" action="{% url 'comentario_eliminar' publicacion.pk forloop.counter0 %}" data-confirmar="¿Eliminar este comentario?">{% csrf_token %}<button class="pc-enlace pc-peligro">Eliminar</button></form>
+            {% endif %}
+          </div>
+          {% if comentario.respuestas %}
+            <ul class="pc-respuestas">
+              {% for respuesta in comentario.respuestas %}
+                <li>{% include 'publicacion_org_contenido/parciales/_avatar.html' with usuario=respuesta.autor clase='pc-avatar-sm' %}<span><strong>{{ respuesta.autor.nombreUsuario }}</strong> {{ respuesta.contenido }}</span></li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+    <div class="pc-vacio-comentarios">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='comentario' %} Aún no hay comentarios. Escribe el primero.</div>
+  {% endif %}
+</section>

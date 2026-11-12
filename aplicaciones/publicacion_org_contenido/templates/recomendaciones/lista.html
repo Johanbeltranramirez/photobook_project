@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block titulo %}Mis recomendaciones · Photobook{% endblock %}
+{% block contenido %}
+{% include 'publicacion_org_contenido/parciales/_estilos.html' %}
+
+<div class="encabezado_pagina">
+  <div>
+    <p class="sobre_titulo">PENSADO PARA TI</p>
+    <h1>Mis recomendaciones</h1>
+  </div>
+  {% if permiso_contenido %}<a class="boton pc-boton-icono" href="{% url 'recomendacion_crear' %}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='mas' %}Crear recomendación</a>{% endif %}
+</div>
+
+<nav class="pc-pastillas pc-barra" aria-label="Filtrar recomendaciones">
+  <a class="pc-pastilla {% if not request.GET.vista and not request.GET.criterio %}activa{% endif %}" href="{% url 'recomendaciones_listar' %}">Todas</a>
+  <a class="pc-pastilla {% if request.GET.vista == 'no' %}activa{% endif %}" href="?vista=no">Sin ver</a>
+  <a class="pc-pastilla {% if request.GET.vista == 'si' %}activa{% endif %}" href="?vista=si">Ya vistas</a>
+  <a class="pc-pastilla {% if request.GET.criterio == 'tendencia' %}activa{% endif %}" href="?criterio=tendencia">🔥 Tendencia</a>
+  <a class="pc-pastilla {% if request.GET.criterio == 'preferencias' %}activa{% endif %}" href="?criterio=preferencias">⭐ Preferencias</a>
+</nav>
+
+{% if datos.recomendaciones %}
+  <ul class="pc-recomendaciones">
+    {% for recomendacion in datos.recomendaciones %}
+      <li class="pc-recomendacion {% if not recomendacion.vista %}sin_ver{% endif %}">
+        <div class="pc-miniatura">{% include 'publicacion_org_contenido/parciales/_medio.html' with tipo=recomendacion.publicacion.tipo url=recomendacion.publicacion.archivoUrl titulo=recomendacion.publicacion.titulo %}</div>
+        <div class="pc-recomendacion-texto">
+          <h2><a href="{% url 'recomendacion_detalle' recomendacion.pk %}">{{ recomendacion.publicacion.titulo|default:'Publicación' }}</a></h2>
+          <div class="pc-motivo">
+            <span class="pc-insignia">{% include 'publicacion_org_contenido/parciales/_criterio.html' with criterio=recomendacion.criterio %}</span>
+            {% if not recomendacion.vista %}<span class="pc-insignia pc-nueva">Nueva</span>{% endif %}
+          </div>
+          <div class="pc-afinidad"><span class="pc-medidor"><span style="width: {% widthratio recomendacion.puntuacion 1 100 %}%"></span></span><span>{% widthratio recomendacion.puntuacion 1 100 %}% de afinidad</span></div>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+  <div class="pc-acciones-masivas">
+    <form method="post" action="{% url 'recomendaciones_marcar_vistas' %}">{% csrf_token %}<button class="pc-boton-icono">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='check' %}Marcar todas como vistas</button></form>
+    <form method="post" action="{% url 'recomendaciones_limpiar_vistas' %}" data-confirmar="¿Eliminar las recomendaciones que ya viste?">{% csrf_token %}<button class="secundario pc-boton-icono">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='papelera' %}Eliminar las vistas</button></form>
+  </div>
+{% else %}
+  <div class="vacio"><p><strong>No tienes recomendaciones.</strong></p><p>Configura tus preferencias en <a href="{% url 'exploracion_inicio' %}">Exploración</a> para recibir sugerencias.</p></div>
+{% endif %}
+{% include 'publicacion_org_contenido/parciales/_script.html' %}
+{% endblock %}

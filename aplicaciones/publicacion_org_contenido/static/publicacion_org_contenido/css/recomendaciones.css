@@ -1,0 +1,29 @@
+.pc-recomendaciones { display: grid; gap: 14px; list-style: none; margin: 0 0 8px; padding: 0; max-width: 860px; }
+.pc-recomendacion { position: relative; display: flex; gap: 18px; align-items: center; padding: 12px; border: 1px solid var(--borde); border-radius: var(--radio); background: #fff; transition: box-shadow .15s ease; }
+.pc-recomendacion:hover, .pc-recomendacion:focus-within { box-shadow: var(--sombra); }
+.pc-recomendacion.sin_ver { border-color: var(--fuerte); background: #fffaf2; }
+.pc-recomendacion .pc-miniatura { flex-shrink: 0; width: 112px; height: 112px; border-radius: 14px; overflow: hidden; }
+.pc-recomendacion-texto { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.pc-recomendacion-texto h2 { margin: 0 0 6px; font-size: 18px; }
+.pc-recomendacion-texto h2 a { text-decoration: none; }
+.pc-recomendacion-texto h2 a::after { content: ""; position: absolute; inset: 0; }
+.pc-motivo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pc-afinidad { display: flex; align-items: center; gap: 10px; margin-top: 10px; max-width: 320px; font-size: 13px; color: var(--texto-suave); }
+.pc-medidor { flex: 1; height: 8px; border-radius: 999px; background: var(--suave); overflow: hidden; }
+.pc-medidor > span { display: block; height: 100%; border-radius: 999px; background: var(--fuerte); }
+.pc-acciones-masivas { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.pc-acciones-masivas form { margin: 0; }
+.pc-acciones-masivas button { margin: 0; }
+.pc-rec-detalle { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: start; max-width: 960px; }
+.pc-rec-detalle h1 { margin: 0 0 12px; }
+.pc-factores { margin: 18px 0 0; padding: 0; list-style: none; }
+.pc-factores li { margin-bottom: 12px; }
+.pc-factores .pc-fila { justify-content: space-between; font-size: 14px; }
+.pc-factores .pc-medidor { margin-top: 4px; }
+.pc-gran-afinidad { display: flex; align-items: baseline; gap: 8px; margin: 14px 0 4px; }
+.pc-gran-afinidad strong { font-size: 40px; line-height: 1; letter-spacing: -1px; }
+.pc-rec-detalle .pc-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.pc-rec-detalle .pc-acciones .boton, .pc-rec-detalle .pc-acciones button { margin: 0; }
+.pc-puntuacion { display: flex; align-items: center; gap: 14px; }
+.pc-puntuacion input[type=range] { flex: 1; padding: 0; accent-color: var(--fuerte-hover); }
+.pc-puntuacion output { min-width: 4ch; font-weight: bold; }

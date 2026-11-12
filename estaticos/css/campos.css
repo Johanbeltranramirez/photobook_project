@@ -1,0 +1,15 @@
+.caja { border: 1px solid #bdb8b2; border-radius: 12px; padding: 8px 14px 9px; background: #fff; transition: border-color .15s ease, box-shadow .15s ease; }
+.caja:hover { border-color: var(--texto-suave); }
+.caja:focus-within { border-color: var(--foco); box-shadow: 0 0 0 1px var(--foco), 0 0 0 4px var(--suave); }
+.caja label { margin: 0; font-size: 12px; font-weight: bold; color: var(--texto-suave); line-height: 1.4; }
+.caja:focus-within label { color: var(--foco); }
+.caja input, .caja textarea, .caja select { border: 0; border-radius: 0; padding: 2px 0 0; background: transparent; box-shadow: none; max-width: none; }
+.caja input:focus, .caja textarea:focus, .caja select:focus { border: 0; box-shadow: none; }
+.caja :focus-visible { outline: none; }
+.caja textarea { height: 100px; min-height: 72px; padding-top: 4px; }
+.caja.con_error { border-color: var(--error); box-shadow: 0 0 0 1px var(--error); }
+.caja.con_error label { color: var(--error); }
+.campo .errorlist { margin: 6px 2px 0; }
+.campo small { margin: 6px 2px 0; }
+.campo_check { display: flex; align-items: center; gap: 10px; }
+.campo_check label { margin: 0; }

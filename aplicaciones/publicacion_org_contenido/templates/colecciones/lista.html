@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block titulo %}Colecciones · Photobook{% endblock %}
+{% block contenido %}
+{% include 'publicacion_org_contenido/parciales/_estilos.html' %}
+
+<div class="encabezado_pagina">
+  <div>
+    <p class="sobre_titulo">GUARDA LO QUE TE INSPIRA</p>
+    <h1>Colecciones</h1>
+  </div>
+  <a class="boton pc-boton-icono" href="{% url 'coleccion_crear' %}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='mas' %}Nueva colección</a>
+</div>
+
+<nav class="pc-pastillas pc-barra" aria-label="Filtrar colecciones">
+  <a class="pc-pastilla {% if not request.GET.creador %}activa{% endif %}" href="{% url 'colecciones_listar' %}">Todas</a>
+  <a class="pc-pastilla {% if request.GET.creador == usuario_actual.nombreUsuario %}activa{% endif %}" href="{% url 'colecciones_listar' %}?creador={{ usuario_actual.nombreUsuario|urlencode }}">Mis colecciones</a>
+</nav>
+
+{% if datos.colecciones %}
+  <ul class="pc-colecciones">
+    {% for coleccion in datos.colecciones %}
+      <li class="pc-coleccion">
+        {% include 'publicacion_org_contenido/parciales/_collage.html' with items=coleccion.publicaciones %}
+        <div class="pc-coleccion-cuerpo">
+          <h2><a href="{% url 'coleccion_detalle' coleccion.pk %}">{{ coleccion.nombre }}</a></h2>
+          <div class="pc-fila">
+            {% include 'publicacion_org_contenido/parciales/_avatar.html' with usuario=coleccion.creador clase='pc-avatar-sm' %}
+            <span class="pc-suave">{{ coleccion.creador.nombreUsuario }}</span>
+          </div>
+          <div class="pc-coleccion-meta" style="margin-top:10px">
+            <span>{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='imagen' %}{{ coleccion.publicaciones|length }}</span>
+            <span>{% if coleccion.privacidad == 'privada' %}{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='candado' %}Privada{% else %}{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='mundo' %}Pública{% endif %}</span>
+            {% if coleccion.tipo == 'colaborativa' %}<span>{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='personas' %}Colaborativa</span>{% endif %}
+          </div>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="vacio">
+    <p><strong>{% if request.GET.creador %}Aún no has creado colecciones.{% else %}No hay colecciones para mostrar.{% endif %}</strong></p>
+    <p>Agrupa tus publicaciones favoritas en una colección. <a href="{% url 'coleccion_crear' %}">Crea la primera</a>.</p>
+  </div>
+{% endif %}
+{% endblock %}

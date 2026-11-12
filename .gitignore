@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Datos locales de Photobook (sesiones, clave, correo y archivos subidos)
+datos_locales/*
+!datos_locales/ajustes_locales.ejemplo.txt
+.clave_local

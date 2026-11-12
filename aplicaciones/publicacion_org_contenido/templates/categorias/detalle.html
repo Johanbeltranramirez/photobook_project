@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block titulo %}{{ datos.categoria.nombre }} · Photobook{% endblock %}
+{% block contenido %}
+{% include 'publicacion_org_contenido/parciales/_estilos.html' %}
+{% with categoria=datos.categoria %}
+
+<section class="pc-categoria-hero">
+  <div class="pc-fila">
+    <span class="pc-sello" aria-hidden="true">{{ categoria.nombre|slice:":2"|capfirst }}</span>
+    <div>
+      <h1>{{ categoria.nombre }}</h1>
+      <p>{{ categoria.descripcion|default:'Esta categoría aún no tiene descripción.' }}</p>
+      <p class="pc-suave">{{ categoria.totalPublicaciones }} publicación{{ categoria.totalPublicaciones|pluralize:"es" }}</p>
+    </div>
+  </div>
+  <div class="pc-acciones">
+    <a class="boton" href="{% url 'publicaciones_listar' %}?categoria={{ categoria.slug }}">Ver todas las publicaciones</a>
+    {% if permiso_contenido %}
+      <a class="boton secundario pc-boton-icono" href="{% url 'categoria_actualizar' categoria.slug %}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='editar' %}Editar</a>
+      <a class="boton secundario pc-boton-icono" href="{% url 'categoria_eliminar' categoria.slug %}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='papelera' %}Eliminar</a>
+    {% endif %}
+  </div>
+</section>
+
+{% if datos.publicaciones %}
+  <div class="pc-seccion"><h2>Lo más reciente</h2></div>
+  <ul class="pc-rejilla">
+    {% for publicacion in datos.publicaciones %}{% include 'publicacion_org_contenido/parciales/_tarjeta_publicacion.html' %}{% endfor %}
+  </ul>
+{% else %}
+  <div class="vacio"><p><strong>Todavía no hay publicaciones en esta categoría.</strong></p><p><a href="{% url 'publicacion_crear' %}">Sé la primera persona en compartir algo</a>.</p></div>
+{% endif %}
+
+<p><a class="pc-con-icono" href="{% url 'categorias_listar' %}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='flecha' %}Volver a categorías</a></p>
+{% endwith %}
+{% endblock %}

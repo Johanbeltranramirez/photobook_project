@@ -1,0 +1,30 @@
+.pc-icono { width: 1.15em; height: 1.15em; flex-shrink: 0; vertical-align: -0.2em; }
+.pc-avatar { flex-shrink: 0; display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #FFD9B8; color: var(--texto); font-size: 12px; font-weight: bold; object-fit: cover; overflow: hidden; }
+.pc-avatar.pc-avatar-sm { width: 26px; height: 26px; font-size: 10px; }
+.pc-avatar.pc-avatar-lg { width: 46px; height: 46px; font-size: 15px; }
+.pc-fila { display: flex; align-items: center; gap: 10px; }
+.pc-fila a { text-decoration: none; font-weight: bold; }
+.pc-fila a:hover { text-decoration: underline; }
+.pc-suave { color: var(--texto-suave); font-size: 13px; }
+.pc-con-icono { display: inline-flex; align-items: center; gap: 7px; }
+.pc-boton-icono { display: inline-flex; align-items: center; gap: 7px; }
+.pc-boton-icono .pc-icono { width: 1.05em; height: 1.05em; }
+.pc-boton-fantasma { background: transparent; border-color: var(--borde); }
+.pc-boton-fantasma:hover { background: var(--suave); border-color: var(--suave); }
+.pc-boton-pequeno { padding: 5px 13px; font-size: 13px; margin: 0; }
+.pc-insignia { display: inline-flex; align-items: center; gap: 5px; padding: 2px 11px; border-radius: 999px; background: var(--suave); font-size: 12px; font-weight: bold; color: var(--texto); }
+.pc-insignia.pc-borrador { background: #fff; border: 1px dashed var(--texto-suave); color: var(--texto-suave); }
+.pc-insignia.pc-nueva { background: var(--fuerte); }
+
+.pc-barra { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 20px; margin-bottom: 24px; }
+.pc-pastillas { display: flex; flex-wrap: wrap; gap: 8px; }
+.pc-pastilla { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border: 1px solid var(--borde); border-radius: 999px; text-decoration: none; font-size: 14px; background: #fff; transition: background .15s ease, border-color .15s ease; }
+.pc-pastilla:hover { background: var(--suave); border-color: var(--suave); }
+.pc-pastilla.activa { background: var(--fuerte); border-color: var(--fuerte); font-weight: bold; }
+.pc-buscador { display: flex; align-items: center; gap: 8px; width: min(100%, 360px); margin: 0; padding: 3px 4px 3px 16px; border: 1px solid #bdb8b2; border-radius: 999px; background: #fff; }
+.pc-buscador:focus-within { border-color: var(--foco); box-shadow: 0 0 0 3px var(--suave); }
+.pc-buscador .pc-icono { color: var(--texto-suave); }
+.pc-buscador input { flex: 1; min-width: 0; border: 0; padding: 8px 4px; background: transparent; box-shadow: none; }
+.pc-buscador input:focus { box-shadow: none; }
+.pc-buscador button { margin: 0; padding: 7px 16px; font-size: 14px; }
+.pc-resultado { margin: 0 0 18px; color: var(--texto-suave); }

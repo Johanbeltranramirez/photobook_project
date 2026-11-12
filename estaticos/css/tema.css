@@ -1,0 +1,13 @@
+:root {
+  --fuerte: #FFA97B;
+  --fuerte-hover: #FF9560;
+  --suave: #FFECCB;
+  --suave-hover: #FFE0AE;
+  --texto: #292623;
+  --texto-suave: #625c57;
+  --borde: #dedbd7;
+  --foco: #654129;
+  --error: #952b1c;
+  --radio: 18px;
+  --sombra: 0 10px 22px rgba(41, 38, 35, .12);
+}

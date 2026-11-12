@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h1>Reportes de contenido</h1>
+<p>Los reportes registrados desde comunidad se atienden aquí.</p>
+<a class="boton" href="{% url 'reporte_crear' %}">Crear reporte</a>
+<div class="tabla">
+<table>
+    <thead><tr><th>Contenido</th><th>Tipo</th><th>Reportado por</th><th>Estado</th><th>Detalle</th></tr></thead>
+    <tbody>
+    {% for reporte in reportes %}
+        <tr><td>{{ reporte.contenido }}</td><td>{{ reporte.tipo_contenido }}</td><td>{{ reporte.reportado_por }}</td><td>{{ reporte.estado }}</td><td><a href="{% url 'reporte_detalle' reporte.pk %}">Ver reporte</a></td></tr>
+    {% empty %}
+        <tr><td colspan="5">No hay reportes para mostrar.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

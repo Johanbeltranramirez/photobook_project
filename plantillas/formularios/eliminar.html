@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block contenido %}
+<h1>{{ titulo }}</h1>
+<p>{{ objeto }}</p><p>{{ explicacion|default:'Confirma esta operación para continuar.' }}</p>
+<form method="post">{% csrf_token %}<button>Confirmar</button><a class="boton secundario" href="{% url 'inicio' %}">Cancelar</a></form>
+{% endblock %}

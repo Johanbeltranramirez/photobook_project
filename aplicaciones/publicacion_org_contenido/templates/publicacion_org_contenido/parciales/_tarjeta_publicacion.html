@@ -1,0 +1,23 @@
+<li class="pc-pub">
+  <div class="pc-pub-medio">
+    {% include 'publicacion_org_contenido/parciales/_medio.html' with tipo=publicacion.tipo url=publicacion.archivoUrl titulo=publicacion.titulo %}
+    <div class="pc-pub-insignias">
+      <span>{% if publicacion.estado == 'borrador' %}<span class="pc-insignia pc-borrador">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='borrador' %}Borrador</span>{% endif %}</span>
+      {% if publicacion.tipo == 'video' %}<span class="pc-insignia">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='video' %}Video</span>{% endif %}
+    </div>
+  </div>
+  <div class="pc-pub-cuerpo">
+    <h2><a href="{% url 'publicacion_detalle' publicacion.pk %}">{{ publicacion.titulo|default:'Sin título' }}</a></h2>
+    <div class="pc-fila">
+      {% include 'publicacion_org_contenido/parciales/_avatar.html' with usuario=publicacion.autor clase='pc-avatar-sm' %}
+      <span class="pc-suave">{{ publicacion.autor.nombreUsuario }}</span>
+    </div>
+    <div class="pc-pub-pie">
+      <div class="pc-pub-datos">
+        <span title="Reacciones">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='corazon' %}{{ publicacion.totalReacciones }}<span class="solo_lectores"> reacciones</span></span>
+        <span title="Comentarios">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='comentario' %}{{ publicacion.totalComentarios }}<span class="solo_lectores"> comentarios</span></span>
+      </div>
+      <span>{{ publicacion.fechaPublicacion|date:'d M' }}</span>
+    </div>
+  </div>
+</li>
