@@ -1,0 +1,1 @@
+{% if usuario.imagenPerfil %}<img class="pc-avatar {{ clase }}" src="{{ usuario.imagenPerfil }}" alt="" loading="lazy">{% else %}<span class="pc-avatar {{ clase }}" aria-hidden="true">{{ usuario.nombreUsuario|slice:":2"|capfirst }}</span>{% endif %}

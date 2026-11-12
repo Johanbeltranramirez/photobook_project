@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block contenido %}
+<h1>Eliminar reporte</h1>
+<p>Se eliminará el reporte sobre {{ reporte.contenido }}. El registro de la actuación administrativa se conserva.</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">Confirmar eliminación</button>
+    <a class="boton secundario" href="{% url 'reporte_detalle' reporte.pk %}">Cancelar</a>
+</form>
+{% endblock %}

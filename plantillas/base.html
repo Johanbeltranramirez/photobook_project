@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block titulo %}Photobook{% endblock %}</title>
+    {% include 'estructura/estilos.html' %}
+</head>
+<body>
+    {% include 'estructura/cabecera.html' %}
+    <div class="estructura">
+        {% include 'estructura/menu.html' %}
+        <main>
+            {% for mensaje in messages %}<p class="aviso">{{ mensaje }}</p>{% endfor %}
+            {% for error in datos.errores %}<p class="error">{{ error }}</p>{% endfor %}
+            {% block contenido %}{% endblock %}
+        </main>
+    </div>
+    {% include 'estructura/pie.html' %}
+</body>
+</html>

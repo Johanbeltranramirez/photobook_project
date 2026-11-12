@@ -1,0 +1,26 @@
+* { box-sizing: border-box; }
+body { margin: 0; background: #fff; color: var(--texto); font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; line-height: 1.55; }
+a { color: inherit; text-underline-offset: 3px; }
+h1 { font-size: clamp(26px, 3vw, 36px); line-height: 1.2; margin: 0 0 20px; letter-spacing: -0.8px; }
+h2 { font-size: 21px; line-height: 1.35; }
+p { max-width: 80ch; }
+small { display: block; color: var(--texto-suave); }
+:focus-visible { outline: 3px solid var(--foco); outline-offset: 3px; }
+
+.cabecera { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px 36px; border-bottom: 3px solid var(--fuerte); }
+.marca { font-size: 28px; font-weight: bold; text-decoration: none; letter-spacing: -1px; }
+.marca span { display: block; font-size: 12px; font-weight: normal; letter-spacing: 0; color: var(--texto-suave); }
+.cuenta { display: flex; align-items: center; gap: 18px; }
+.estructura { display: flex; min-height: 78vh; }
+.menu { width: 225px; flex-shrink: 0; padding: 24px 18px; border-right: 1px solid var(--borde); }
+.menu a { display: block; padding: 9px 14px; border-radius: 16px; text-decoration: none; margin-bottom: 3px; transition: background .15s ease; }
+.menu a:hover, .menu a:focus { background: var(--suave); }
+.menu a[aria-current="page"], .menu a.activo { background: var(--suave); font-weight: bold; }
+main { width: 100%; min-width: 0; max-width: 1500px; padding: 32px 42px; }
+footer { padding: 22px 36px; border-top: 1px solid var(--borde); font-size: 13px; color: var(--texto-suave); }
+
+.encabezado_pagina { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--borde); }
+.encabezado_pagina h1 { margin: 0; }
+.encabezado_pagina .sobre_titulo { margin-bottom: 6px; }
+.encabezado_pagina .boton { margin: 0; }
+.sobre_titulo { font-size: 12px; letter-spacing: 2px; margin: 0 0 12px; color: var(--texto-suave); }

@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block titulo %}{{ datos.coleccion.nombre }} · Photobook{% endblock %}
+{% block contenido %}
+{% include 'publicacion_org_contenido/parciales/_estilos.html' %}
+{% with coleccion=datos.coleccion %}
+
+<section class="pc-portada">
+  {% include 'publicacion_org_contenido/parciales/_collage.html' with items=coleccion.publicaciones %}
+  <div class="pc-portada-texto">
+    <h1>{{ coleccion.nombre }}</h1>
+    {% if coleccion.descripcion %}<p>{{ coleccion.descripcion }}</p>{% endif %}
+    <div class="pc-fila">
+      {% include 'publicacion_org_contenido/parciales/_avatar.html' with usuario=coleccion.creador clase='' %}
+      <div><a href="{% url 'perfil_detalle' coleccion.creador.nombreUsuario %}">{{ coleccion.creador.nombreUsuario }}</a><small>Creadora o creador</small></div>
+    </div>
+    <p style="margin-top:14px">
+      <span class="pc-insignia">{% if coleccion.privacidad == 'privada' %}{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='candado' %}Privada{% else %}{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='mundo' %}Pública{% endif %}</span>
+      {% if coleccion.tipo == 'colaborativa' %}<span class="pc-insignia">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='personas' %}Colaborativa</span>{% endif %}
+      <span class="pc-insignia">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='imagen' %}{{ coleccion.publicaciones|length }} publicacion{{ coleccion.publicaciones|length|pluralize:"es" }}</span>
+    </p>
+    {% if datos.puede_gestionar %}
+      <div class="pc-acciones">
+        <a class="boton pc-boton-icono" href="{% url 'coleccion_actualizar' coleccion.pk %}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='editar' %}Editar</a>
+        <a class="boton secundario pc-boton-icono" href="{% url 'coleccion_eliminar' coleccion.pk %}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='papelera' %}Eliminar</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<div class="pc-seccion"><h2>Publicaciones guardadas</h2></div>
+{% if coleccion.publicaciones %}
+  <ul class="pc-guardadas">
+    {% for publicacion in coleccion.publicaciones %}
+      <li class="pc-guardada-item">
+        <a href="{% url 'publicacion_por_url' %}?archivoUrl={{ publicacion.archivoUrl|urlencode }}">
+          <div class="pc-miniatura">
+            {% include 'publicacion_org_contenido/parciales/_medio.html' with tipo=publicacion.tipo url=publicacion.archivoUrl titulo=publicacion.titulo %}
+            {% if publicacion.tipo == 'video' %}<span class="pc-insignia">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='video' %}Video</span>{% endif %}
+          </div>
+          <span class="pc-guardada-titulo">{{ publicacion.titulo|default:'Publicación' }}</span>
+        </a>
+        {% if datos.puede_editar %}
+          <form class="pc-quitar" method="post" action="{% url 'coleccion_quitar_publicacion' coleccion.pk forloop.counter0 %}">{% csrf_token %}<button title="Quitar de la colección">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='cerrar' %}<span class="solo_lectores">Quitar de la colección</span></button></form>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="vacio"><p><strong>Esta colección todavía está vacía.</strong></p><p>{% if datos.puede_editar %}Agrega publicaciones desde aquí abajo o con el botón «Guardar» de cada publicación.{% endif %}</p></div>
+{% endif %}
+
+{% if datos.puede_editar %}
+  <div class="pc-seccion"><h2>Agregar publicaciones</h2></div>
+  <details class="pc-desplegable">
+    <summary>Elegir entre las publicaciones recientes</summary>
+    {% if datos.disponibles %}
+      <ul class="pc-selector">
+        {% for publicacion in datos.disponibles %}
+          <li>
+            <form method="post" action="{% url 'coleccion_guardar_publicacion' coleccion.pk %}">{% csrf_token %}
+              <input type="hidden" name="archivoUrl" value="{{ publicacion.archivoUrl }}">
+              <button title="Agregar a la colección">
+                <span class="pc-miniatura">{% include 'publicacion_org_contenido/parciales/_medio.html' with tipo=publicacion.tipo url=publicacion.archivoUrl titulo=publicacion.titulo %}</span>
+                <small>{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='mas' %} {{ publicacion.titulo|default:'Sin título' }}</small>
+              </button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="pc-suave">No hay más publicaciones para agregar por ahora.</p>
+    {% endif %}
+  </details>
+{% endif %}
+
+{% if coleccion.tipo == 'colaborativa' %}
+  <div class="pc-seccion"><h2>Colaboradores</h2></div>
+  {% if coleccion.colaboradores %}
+    <ul class="pc-colaboradores">
+      {% for usuario in coleccion.colaboradores %}
+        <li class="pc-colaborador">
+          {% include 'publicacion_org_contenido/parciales/_avatar.html' with usuario=usuario clase='pc-avatar-sm' %}<span>{{ usuario.nombreUsuario }}</span>
+          {% if datos.puede_gestionar %}
+            <form method="post" action="{% url 'coleccion_colaboradores' coleccion.pk %}" data-confirmar="¿Quitar a {{ usuario.nombreUsuario }} de la colección?">{% csrf_token %}<input type="hidden" name="usuario" value="{{ usuario.nombreUsuario }}"><button title="Quitar colaborador">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='cerrar' %}<span class="solo_lectores">Quitar a {{ usuario.nombreUsuario }}</span></button></form>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="pc-suave">Aún no hay colaboradores.</p>
+  {% endif %}
+  {% if datos.puede_gestionar and datos.candidatos %}
+    <form class="pc-invitar" method="post" action="{% url 'coleccion_colaboradores' coleccion.pk %}">{% csrf_token %}
+      <label class="solo_lectores" for="colaborador">Invitar a un colaborador</label>
+      <select id="colaborador" name="usuario">{% for usuario in datos.candidatos %}<option value="{{ usuario.nombreUsuario }}">{{ usuario.nombreUsuario }}</option>{% endfor %}</select>
+      <button class="secundario pc-boton-icono">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='personas' %}Agregar colaborador</button>
+    </form>
+  {% endif %}
+{% endif %}
+
+<p style="margin-top:30px"><a class="pc-con-icono" href="{% url 'colecciones_listar' %}">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='flecha' %}Volver a colecciones</a></p>
+{% endwith %}
+{% include 'publicacion_org_contenido/parciales/_script.html' %}
+{% endblock %}

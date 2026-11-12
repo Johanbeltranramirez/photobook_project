@@ -1,0 +1,1 @@
+{% if tipo == 'imagen' %}<img src="{{ url }}" alt="{{ titulo|default:'Publicación' }}" loading="lazy">{% else %}<video preload="metadata" muted playsinline src="{{ url }}#t=0.1" aria-label="{{ titulo|default:'Video' }}"></video>{% endif %}

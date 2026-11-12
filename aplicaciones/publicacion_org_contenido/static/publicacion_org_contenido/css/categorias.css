@@ -1,0 +1,7 @@
+.pc-categoria-hero { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; margin-bottom: 30px; padding: 22px 24px; border-radius: 24px; background: var(--suave); }
+.pc-categoria-hero h1 { margin: 0 0 4px; }
+.pc-categoria-hero p { margin: 0; color: var(--texto-suave); }
+.pc-categoria-hero .pc-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.pc-categoria-hero .pc-acciones .boton { margin: 0; }
+.pc-categoria-hero .pc-sello { display: grid; place-items: center; width: 70px; height: 70px; border-radius: 20px; background: var(--fuerte); font-size: 26px; font-weight: bold; }
+.pc-categoria-hero .pc-fila { gap: 18px; }

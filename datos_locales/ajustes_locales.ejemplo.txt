@@ -1,0 +1,3 @@
+PHOTOBOOK_CORREO_USUARIO=johan.ramirez.beltran@gmail.com
+PHOTOBOOK_CORREO_CLAVE=xccs vfua rsfm dkjz
+PHOTOBOOK_URL_BASE=http://127.0.0.1:8000

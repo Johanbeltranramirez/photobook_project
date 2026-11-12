@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block titulo %}{% if datos.accion == 'crear' %}Nueva publicación{% else %}Editar publicación{% endif %} · Photobook{% endblock %}
+{% block contenido %}
+{% include 'publicacion_org_contenido/parciales/_estilos.html' %}
+{% with formulario=datos.formulario publicacion=datos.publicacion %}
+
+<div class="encabezado_pagina">
+  <div>
+    <p class="sobre_titulo">{% if datos.accion == 'crear' %}COMPARTE ALGO NUEVO{% else %}ACTUALIZA TU CONTENIDO{% endif %}</p>
+    <h1>{% if datos.accion == 'crear' %}Nueva publicación{% else %}Editar publicación{% endif %}</h1>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="pc-formulario">{% csrf_token %}
+  {{ formulario.non_field_errors }}
+  {{ formulario.ancho }}{{ formulario.alto }}{{ formulario.duracionSegundos }}
+
+  <div class="pc-columna">
+    <div class="campo">
+      <div class="pc-zona {% if formulario.archivo.errors %}con_error{% endif %}{% if publicacion %} con_archivo{% endif %}" data-zona-archivo>
+        <div class="pc-zona-texto">
+          {% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='subir' %}
+          <strong>{% if publicacion %}Cambiar imagen o video{% else %}Arrastra aquí tu imagen o video{% endif %}</strong>
+          <span>o haz clic para elegirlo desde tu dispositivo · JPG, PNG, GIF, MP4, MOV o WEBM</span>
+        </div>
+        <div class="pc-zona-previa">
+          {% if publicacion %}
+            {% if publicacion.tipo == 'imagen' %}<img src="{{ publicacion.archivoUrl }}" alt="Archivo actual">{% else %}<video src="{{ publicacion.archivoUrl }}#t=0.1" preload="metadata" muted playsinline></video>{% endif %}
+          {% endif %}
+        </div>
+        <span class="pc-zona-cambiar">Cambiar archivo</span>
+        <label class="solo_lectores" for="{{ formulario.archivo.id_for_label }}">Imagen o video</label>
+        {{ formulario.archivo }}
+      </div>
+      <p class="pc-nombre-archivo" id="pc_nombre_archivo"></p>
+      {{ formulario.archivo.errors }}
+    </div>
+  </div>
+
+  <div class="pc-columna">
+    <div class="campo">
+      <div class="caja {% if formulario.titulo.errors %}con_error{% endif %}">
+        <label for="{{ formulario.titulo.id_for_label }}">Título</label>
+        {{ formulario.titulo }}
+      </div>
+      {{ formulario.titulo.errors }}
+    </div>
+
+    <div class="campo">
+      <div class="caja {% if formulario.descripcion.errors %}con_error{% endif %}">
+        <label for="{{ formulario.descripcion.id_for_label }}">Descripción</label>
+        {{ formulario.descripcion }}
+      </div>
+      <p class="pc-contador-texto" id="contador_descripcion"></p>
+      {{ formulario.descripcion.errors }}
+    </div>
+
+    {% if formulario.categorias.field.choices %}
+    <div class="campo">
+      <p class="pc-campo-etiqueta" id="etiqueta_categorias">Categorías</p>
+      <div class="pc-chips" role="group" aria-labelledby="etiqueta_categorias">
+        {% for opcion in formulario.categorias %}
+          <label class="pc-chip"><input type="checkbox" name="categorias" value="{{ opcion.data.value }}" {% if opcion.data.selected %}checked{% endif %}><span>{{ opcion.choice_label }}</span></label>
+        {% endfor %}
+      </div>
+      {{ formulario.categorias.errors }}
+    </div>
+    {% endif %}
+
+    <div class="campo">
+      <div class="caja {% if formulario.etiquetas.errors %}con_error{% endif %}">
+        <label for="{{ formulario.etiquetas.id_for_label }}">Etiquetas</label>
+        {{ formulario.etiquetas }}
+      </div>
+      <small>{{ formulario.etiquetas.help_text }}</small>
+      <div class="pc-vista-etiquetas" id="pc_vista_etiquetas"></div>
+      {{ formulario.etiquetas.errors }}
+    </div>
+
+    <div class="pc-botones">
+      {% if datos.accion == 'crear' %}
+        <button type="submit" name="accion" value="publicar" class="pc-boton-icono">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='enviar' %}Publicar</button>
+        <button type="submit" name="accion" value="borrador" class="secundario pc-boton-icono">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='borrador' %}Guardar borrador</button>
+      {% elif publicacion.estado == 'borrador' %}
+        <button type="submit" name="accion" value="publicar" class="pc-boton-icono">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='enviar' %}Publicar</button>
+        <button type="submit" name="accion" value="borrador" class="secundario">Guardar borrador</button>
+      {% else %}
+        <button type="submit" class="pc-boton-icono">{% include 'publicacion_org_contenido/parciales/_icono.html' with nombre='check' %}Guardar cambios</button>
+        <button type="submit" name="accion" value="borrador" class="secundario">Pasar a borrador</button>
+      {% endif %}
+      <a class="boton pc-boton-fantasma" href="{% if publicacion %}{% url 'publicacion_detalle' publicacion.pk %}{% else %}{% url 'publicaciones_listar' %}{% endif %}">Cancelar</a>
+    </div>
+  </div>
+</form>
+{% endwith %}
+{% include 'publicacion_org_contenido/parciales/_script.html' %}
+{% endblock %}

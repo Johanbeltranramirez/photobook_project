@@ -1,0 +1,21 @@
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+  a.mosaico:hover, a.mosaico:focus-visible { transform: none; }
+}
+
+@media (max-width: 760px) {
+  .estructura { display: block; }
+  .menu { width: 100%; display: flex; overflow-x: auto; padding: 8px 12px; border-right: 0; border-bottom: 1px solid var(--borde); }
+  .menu a { white-space: nowrap; margin-bottom: 0; }
+  main { padding: 25px 18px; }
+  .cabecera { padding: 18px; flex-wrap: wrap; }
+  .galeria { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .mosaicos { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .mosaico_inicial { min-height: 80px; font-size: 32px; }
+  .formulario_doble { grid-template-columns: 1fr; gap: 24px; }
+  .vista_previa { position: static; order: -1; }
+  .grupo { flex-wrap: wrap; padding: 14px 4px; }
+  .grupo_info { flex-basis: calc(100% - 70px); }
+  .grupo .boton { margin-left: 68px; }
+  .campos_fila { grid-template-columns: 1fr; }
+}

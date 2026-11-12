@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ titulo }}</title></head>
+<body style="margin:0;padding:0;background:#FFF8EC;font-family:Segoe UI,Roboto,Arial,sans-serif;color:#292623;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FFF8EC;padding:28px 12px;">
+  <tr><td align="center">
+    <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #dedbd7;">
+      <tr><td style="background:#FFA97B;padding:22px 32px;font-size:26px;font-weight:bold;letter-spacing:-1px;color:#292623;">{{ sitio }}</td></tr>
+      <tr><td style="padding:32px 32px 8px;">
+        <p style="margin:0 0 6px;font-size:14px;color:#625c57;">{{ saludo }}</p>
+        <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#292623;">{{ titulo }}</h1>
+        {% if texto and texto != titulo %}<p style="margin:0 0 18px;font-size:16px;line-height:1.6;">{{ texto }}</p>{% endif %}
+        {% if detalle %}<blockquote style="margin:0 0 22px;padding:12px 16px;background:#FFECCB;border-left:4px solid #FFA97B;border-radius:8px;font-size:15px;line-height:1.55;color:#292623;">{{ detalle }}</blockquote>{% endif %}
+        {% if boton_url %}<p style="margin:0 0 24px;"><a href="{{ boton_url }}" style="display:inline-block;padding:12px 26px;background:#FFA97B;color:#292623;text-decoration:none;font-weight:bold;border-radius:24px;">{{ boton_texto }}</a></p>
+        <p style="margin:0 0 22px;font-size:13px;color:#625c57;word-break:break-all;">Si el botón no funciona, copia este enlace en tu navegador:<br><a href="{{ boton_url }}" style="color:#654129;">{{ boton_url }}</a></p>{% endif %}
+        {% if nota %}<p style="margin:0 0 22px;font-size:14px;color:#625c57;">{{ nota }}</p>{% endif %}
+      </td></tr>
+      <tr><td style="padding:18px 32px 26px;border-top:1px solid #dedbd7;font-size:12px;color:#625c57;line-height:1.6;">
+        Recibes este mensaje porque tienes una cuenta en {{ sitio }}.
+        {% if preferencias_url %}<br><a href="{{ preferencias_url }}" style="color:#654129;">Elegir qué correos quiero recibir</a>{% endif %}
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>

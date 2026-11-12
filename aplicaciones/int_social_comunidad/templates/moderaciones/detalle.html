@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block contenido %}{% with bloqueo=datos.moderacion %}<h1>Bloqueo de {{ bloqueo.bloqueado.nombreUsuario }}</h1><p>Ámbito: {{ bloqueo.ambito }}</p><p>Expira: {{ bloqueo.fechaExpiracion|date:'d/m/Y H:i'|default:'Sin fecha de expiración' }}</p><a class="boton" href="{% url 'bloqueo_eliminar' bloqueo.pk %}">Desbloquear</a>{% endwith %}{% endblock %}
